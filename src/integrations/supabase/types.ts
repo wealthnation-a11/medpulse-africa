@@ -14,16 +14,176 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      doctor_validations: {
+        Row: {
+          corrected_disease: string | null
+          created_at: string
+          doctor_id: string
+          doctor_notes: string | null
+          id: string
+          observation_id: string
+          updated_at: string
+          validation_status: string
+        }
+        Insert: {
+          corrected_disease?: string | null
+          created_at?: string
+          doctor_id: string
+          doctor_notes?: string | null
+          id?: string
+          observation_id: string
+          updated_at?: string
+          validation_status?: string
+        }
+        Update: {
+          corrected_disease?: string | null
+          created_at?: string
+          doctor_id?: string
+          doctor_notes?: string | null
+          id?: string
+          observation_id?: string
+          updated_at?: string
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_validations_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: false
+            referencedRelation: "observations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      observations: {
+        Row: {
+          ai_risk_level: string | null
+          case_count: number
+          city: string
+          confidence_scores: number[] | null
+          country: string
+          created_at: string
+          id: string
+          notes: string | null
+          outbreak_alert: boolean | null
+          predicted_diseases: string[] | null
+          rainfall: number | null
+          region: string
+          rule_risk_level: string
+          status: string
+          symptoms: string[]
+          temperature: number | null
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          ai_risk_level?: string | null
+          case_count?: number
+          city?: string
+          confidence_scores?: number[] | null
+          country?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outbreak_alert?: boolean | null
+          predicted_diseases?: string[] | null
+          rainfall?: number | null
+          region?: string
+          rule_risk_level?: string
+          status?: string
+          symptoms?: string[]
+          temperature?: number | null
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          ai_risk_level?: string | null
+          case_count?: number
+          city?: string
+          confidence_scores?: number[] | null
+          country?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outbreak_alert?: boolean | null
+          predicted_diseases?: string[] | null
+          rainfall?: number | null
+          region?: string
+          rule_risk_level?: string
+          status?: string
+          symptoms?: string[]
+          temperature?: number | null
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          default_location: string | null
+          display_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_location?: string | null
+          display_name?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_location?: string | null
+          display_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
+      is_doctor: { Args: never; Returns: boolean }
+      is_volunteer: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "volunteer" | "doctor" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +310,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["volunteer", "doctor", "admin"],
+    },
   },
 } as const
