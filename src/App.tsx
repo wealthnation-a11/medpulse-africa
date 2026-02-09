@@ -35,7 +35,7 @@ const App = () => (
             <Route
               path="/submit"
               element={
-                <ProtectedRoute requiredRole="volunteer">
+                <ProtectedRoute requiredRole={["volunteer", "doctor"]}>
                   <SubmitObservation />
                 </ProtectedRoute>
               }
