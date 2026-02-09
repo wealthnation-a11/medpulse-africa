@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   FileText,
   ShieldCheck,
+  ClipboardList,
   LogOut,
   Menu,
   User,
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Submit Observation", href: "/submit", icon: FileText, roles: ["volunteer", "doctor"] as const },
+  { label: "My Submissions", href: "/my-submissions", icon: ClipboardList, roles: ["volunteer", "doctor"] as const },
   { label: "Validations", href: "/validations", icon: ShieldCheck, roles: ["doctor"] as const },
 ];
 

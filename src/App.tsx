@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import SubmitObservation from "./pages/SubmitObservation";
 import DoctorValidations from "./pages/DoctorValidations";
+import MySubmissionsPage from "./pages/MySubmissions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="doctor">
                   <DoctorValidations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-submissions"
+              element={
+                <ProtectedRoute requiredRole={["volunteer", "doctor"]}>
+                  <MySubmissionsPage />
                 </ProtectedRoute>
               }
             />
