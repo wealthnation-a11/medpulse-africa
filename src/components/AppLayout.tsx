@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Submit Observation", href: "/submit", icon: FileText, role: "volunteer" as const },
-  { label: "Validations", href: "/validations", icon: ShieldCheck, role: "doctor" as const },
+  { label: "Submit Observation", href: "/submit", icon: FileText, roles: ["volunteer", "doctor"] as const },
+  { label: "Validations", href: "/validations", icon: ShieldCheck, roles: ["doctor"] as const },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +32,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const visibleItems = navItems.filter(
-    (item) => !item.role || hasRole(item.role) || hasRole("admin")
+    (item) =>
+      !item.roles || item.roles.some((r) => hasRole(r)) || hasRole("admin")
   );
 
   const roleLabel = roles.length > 0 ? roles[0].charAt(0).toUpperCase() + roles[0].slice(1) : "User";
