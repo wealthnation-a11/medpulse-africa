@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, BarChart3 } from "lucide-react";
+import { LogIn, UserPlus } from "lucide-react";
 import { AfricaMapSVG } from "./AfricaMapSVG";
 
 export const HeroSection = () => {
@@ -43,9 +43,9 @@ export const HeroSection = () => {
 
             <div className="flex flex-wrap gap-3">
               <Button size="lg" className="font-semibold" asChild>
-                <Link to="/submit">
-                  <Stethoscope className="mr-1.5 h-4 w-4" />
-                  Submit Health Observation
+                <Link to="/auth">
+                  <UserPlus className="mr-1.5 h-4 w-4" />
+                  Sign Up Free
                 </Link>
               </Button>
               <Button
@@ -54,10 +54,10 @@ export const HeroSection = () => {
                 className="font-semibold"
                 asChild
               >
-                <a href="#dashboard">
-                  <BarChart3 className="mr-1.5 h-4 w-4" />
-                  View Live Dashboard
-                </a>
+                <Link to="/auth">
+                  <LogIn className="mr-1.5 h-4 w-4" />
+                  Sign In
+                </Link>
               </Button>
             </div>
 

@@ -59,15 +59,14 @@ export const Header = () => {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/submit">Submit Observation</Link>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/auth">Sign In</Link>
           </Button>
           <Button
             size="sm"
-            className="bg-accent text-accent-foreground hover:bg-accent/90"
             asChild
           >
-            <Link to="/auth?role=doctor">Join as Doctor</Link>
+            <Link to="/auth">Sign Up</Link>
           </Button>
         </div>
 
@@ -98,10 +97,10 @@ export const Header = () => {
               ))}
               <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
                 <Button variant="outline" asChild>
-                  <Link to="/submit">Submit Observation</Link>
+                  <Link to="/auth">Sign In</Link>
                 </Button>
-                <Button className="bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                  <Link to="/auth?role=doctor">Join as Doctor</Link>
+                <Button asChild>
+                  <Link to="/auth">Sign Up</Link>
                 </Button>
               </div>
             </div>
