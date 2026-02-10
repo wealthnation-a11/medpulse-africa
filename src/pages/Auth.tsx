@@ -38,9 +38,9 @@ export default function Auth() {
         } else {
           toast({
             title: "Account created!",
-            description: "Please check your email to verify your account before signing in.",
+            description: "Welcome to MedPulse!",
           });
-          setMode("login");
+          navigate("/dashboard");
         }
       } else {
         const { error } = await signIn(email, password);
