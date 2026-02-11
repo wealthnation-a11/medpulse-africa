@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OverviewCharts } from "./OverviewCharts";
+import { ObservationHeatmap } from "./ObservationHeatmap";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -203,6 +204,8 @@ export function DoctorDashboard({
           </CardContent>
         </Card>
       </div>
+
+      <ObservationHeatmap observations={observations} />
 
       <OverviewCharts casesOverTime={casesOverTime} symptomChartData={symptomChartData} />
 
