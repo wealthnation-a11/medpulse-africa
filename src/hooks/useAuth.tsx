@@ -87,6 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user_id: data.user.id,
         role,
       });
+      // Immediately fetch roles so navigation renders correctly
+      await fetchUserData(data.user.id);
     }
 
     return { error };
