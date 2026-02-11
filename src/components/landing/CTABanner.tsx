@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Stethoscope } from "lucide-react";
+import { ArrowRight, Stethoscope, Users, ShieldCheck } from "lucide-react";
 
 export const CTABanner = () => {
   return (
@@ -11,7 +11,7 @@ export const CTABanner = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
-          className="text-center max-w-2xl mx-auto"
+          className="text-center max-w-3xl mx-auto mb-14"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -21,33 +21,69 @@ export const CTABanner = () => {
             See Something. Report It.{" "}
             <span className="text-accent">Save Lives.</span>
           </h2>
-          <p className="text-primary-foreground/80 text-lg mb-10 max-w-lg mx-auto">
+          <p className="text-primary-foreground/80 text-lg mb-12 max-w-lg mx-auto">
             Every observation you submit helps build a healthier, safer Africa. Join the MedPulse network today.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          <motion.div
+            className="rounded-2xl border border-primary-foreground/20 bg-primary-foreground/10 backdrop-blur-sm p-8 text-center"
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-foreground/15 mx-auto mb-4">
+              <Users className="h-7 w-7 text-primary-foreground" />
+            </div>
+            <h3 className="font-display text-xl font-bold text-primary-foreground mb-2">
+              I'm a Volunteer
+            </h3>
+            <p className="text-primary-foreground/70 text-sm mb-6">
+              Report health observations from your community and help detect outbreaks early.
+            </p>
             <Button
               size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base px-8"
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
               asChild
             >
-              <Link to="/submit">
+              <Link to="/auth?role=volunteer">
                 <Stethoscope className="mr-2 h-4 w-4" />
-                Submit Health Observation
+                Join as Volunteer
               </Link>
             </Button>
+          </motion.div>
+
+          <motion.div
+            className="rounded-2xl border border-accent/30 bg-accent/10 backdrop-blur-sm p-8 text-center"
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent/20 mx-auto mb-4">
+              <ShieldCheck className="h-7 w-7 text-accent" />
+            </div>
+            <h3 className="font-display text-xl font-bold text-primary-foreground mb-2">
+              I'm a Doctor
+            </h3>
+            <p className="text-primary-foreground/70 text-sm mb-6">
+              Validate reports, support early detection, and guide public health responses.
+            </p>
             <Button
               size="lg"
-              variant="outline"
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 font-semibold text-base px-8"
+              className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold"
               asChild
             >
-              <Link to="/auth">
-                Join the Network
+              <Link to="/auth?role=doctor">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Join as Doctor
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
