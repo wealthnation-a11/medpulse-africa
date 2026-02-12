@@ -30,6 +30,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchObservations();
+
+    const channel = supabase
+      .channel("observations-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "observations" },
+        () => {
+          fetchObservations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchObservations = async () => {
