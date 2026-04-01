@@ -82,7 +82,7 @@ export function DoctorDashboard({
   const diseaseFrequency = filtered
     .flatMap((o) => o.predicted_diseases || [])
     .reduce((acc: Record<string, number>, d) => { acc[d] = (acc[d] || 0) + 1; return acc; }, {});
-  const topDiseases = Object.entries(diseaseFrequency).sort(([, a], [, b]) => b - a).slice(0, 5);
+  const topDiseases = Object.entries(diseaseFrequency).sort(([, a], [, b]) => (b as number) - (a as number)).slice(0, 5);
 
   const validationRate = totalReports > 0 ? Math.round((validatedCount / totalReports) * 100) : 0;
 
