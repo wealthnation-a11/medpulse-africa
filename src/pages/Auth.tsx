@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, ArrowLeft, Loader2 } from "lucide-react";
+import { Activity, ArrowLeft, Loader2, Stethoscope, HeartHandshake } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Mode = "login" | "signup";
@@ -36,10 +36,7 @@ export default function Auth() {
         if (error) {
           toast({ title: "Signup failed", description: error.message, variant: "destructive" });
         } else {
-          toast({
-            title: "Account created!",
-            description: "Welcome to MedPulse!",
-          });
+          toast({ title: "Account created!", description: "Welcome to MedPulse!" });
           navigate("/dashboard");
         }
       } else {
@@ -57,7 +54,6 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen gradient-hero flex flex-col">
-      {/* Back link */}
       <div className="container mx-auto px-4 pt-6">
         <Link
           to="/"
@@ -88,56 +84,54 @@ export default function Auth() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Dr. Jane Doe"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Role selection */}
-                  <div className="space-y-2">
-                    <Label>I want to join as</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setRole("volunteer")}
-                        className={`rounded-lg border-2 p-4 text-center transition-all ${
-                          role === "volunteer"
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/40"
-                        }`}
-                      >
-                        <div className="text-2xl mb-1">🏥</div>
-                        <div className="font-medium text-sm">Volunteer</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Report health observations
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRole("doctor")}
-                        className={`rounded-lg border-2 p-4 text-center transition-all ${
-                          role === "doctor"
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/40"
-                        }`}
-                      >
-                        <div className="text-2xl mb-1">🩺</div>
-                        <div className="font-medium text-sm">Doctor</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Validate & review reports
-                        </div>
-                      </button>
+              {/* Role selection — always visible */}
+              <div className="space-y-2">
+                <Label>{mode === "signup" ? "I want to join as" : "I am signing in as"}</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRole("volunteer")}
+                    className={`rounded-lg border-2 p-4 text-center transition-all ${
+                      role === "volunteer"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <HeartHandshake className={`h-7 w-7 mx-auto mb-2 ${role === "volunteer" ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="font-semibold text-sm">Volunteer</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {mode === "signup" ? "Report health observations" : "Community reporter"}
                     </div>
-                  </div>
-                </>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("doctor")}
+                    className={`rounded-lg border-2 p-4 text-center transition-all ${
+                      role === "doctor"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <Stethoscope className={`h-7 w-7 mx-auto mb-2 ${role === "doctor" ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="font-semibold text-sm">Doctor</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {mode === "signup" ? "Validate & review reports" : "Clinical professional"}
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    placeholder={role === "doctor" ? "Dr. Jane Doe" : "Jane Doe"}
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    required
+                  />
+                </div>
               )}
 
               <div className="space-y-2">
@@ -167,7 +161,7 @@ export default function Auth() {
 
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {mode === "signup" ? "Create Account" : "Sign In"}
+                {mode === "signup" ? "Create Account" : `Sign In as ${role === "doctor" ? "Doctor" : "Volunteer"}`}
               </Button>
             </form>
 
@@ -175,20 +169,14 @@ export default function Auth() {
               {mode === "signup" ? (
                 <>
                   Already have an account?{" "}
-                  <button
-                    onClick={() => setMode("login")}
-                    className="font-medium text-primary hover:underline"
-                  >
+                  <button onClick={() => setMode("login")} className="font-medium text-primary hover:underline">
                     Sign in
                   </button>
                 </>
               ) : (
                 <>
                   Don&apos;t have an account?{" "}
-                  <button
-                    onClick={() => setMode("signup")}
-                    className="font-medium text-primary hover:underline"
-                  >
+                  <button onClick={() => setMode("signup")} className="font-medium text-primary hover:underline">
                     Sign up
                   </button>
                 </>
