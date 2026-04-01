@@ -100,7 +100,7 @@ export function DoctorDashboard({
 
   const filteredSymptomData = (() => {
     const freq = filtered.flatMap((o) => o.symptoms).reduce((acc: Record<string, number>, s) => { acc[s] = (acc[s] || 0) + 1; return acc; }, {});
-    return Object.entries(freq).map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count })).sort((a, b) => b.count - a.count);
+    return Object.entries(freq).map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count: count as number })).sort((a, b) => b.count - a.count);
   })();
 
   return (
