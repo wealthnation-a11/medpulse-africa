@@ -237,7 +237,7 @@ export function DoctorDashboard({
                 {topDiseases.map(([disease, count]) => (
                   <div key={disease} className="flex items-center justify-between">
                     <span className="text-sm font-medium capitalize">{disease}</span>
-                    <Badge variant="secondary">{count} cases</Badge>
+                    <Badge variant="secondary">{count as number} cases</Badge>
                   </div>
                 ))}
               </div>
