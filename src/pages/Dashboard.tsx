@@ -36,9 +36,7 @@ export default function Dashboard() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "observations" },
-        () => {
-          fetchObservations();
-        }
+        () => fetchObservations()
       )
       .subscribe();
 
@@ -59,28 +57,31 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  // Shared chart data
-  const casesOverTime = observations
-    .reduce((acc: { date: string; cases: number }[], obs) => {
-      const date = format(new Date(obs.created_at), "MMM dd");
-      const existing = acc.find((d) => d.date === date);
-      if (existing) existing.cases += obs.case_count;
-      else acc.push({ date, cases: obs.case_count });
-      return acc;
-    }, [])
-    .reverse()
-    .slice(-14);
+  const buildChartData = (obs: Observation[]) => {
+    const casesOverTime = obs
+      .reduce((acc: { date: string; cases: number }[], o) => {
+        const date = format(new Date(o.created_at), "MMM dd");
+        const existing = acc.find((d) => d.date === date);
+        if (existing) existing.cases += o.case_count;
+        else acc.push({ date, cases: o.case_count });
+        return acc;
+      }, [])
+      .reverse()
+      .slice(-14);
 
-  const symptomFrequency = observations
-    .flatMap((o) => o.symptoms)
-    .reduce((acc: Record<string, number>, s) => {
-      acc[s] = (acc[s] || 0) + 1;
-      return acc;
-    }, {});
+    const symptomFrequency = obs
+      .flatMap((o) => o.symptoms)
+      .reduce((acc: Record<string, number>, s) => {
+        acc[s] = (acc[s] || 0) + 1;
+        return acc;
+      }, {});
 
-  const symptomChartData = Object.entries(symptomFrequency)
-    .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count }))
-    .sort((a, b) => b.count - a.count);
+    const symptomChartData = Object.entries(symptomFrequency)
+      .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { casesOverTime, symptomChartData };
+  };
 
   if (loading) {
     return (
@@ -93,6 +94,7 @@ export default function Dashboard() {
   }
 
   const isDoctor = hasRole("doctor");
+  const { casesOverTime, symptomChartData } = buildChartData(observations);
 
   return (
     <AppLayout>

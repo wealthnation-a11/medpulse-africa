@@ -1,9 +1,12 @@
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OverviewCharts } from "./OverviewCharts";
 import { ObservationHeatmap } from "./ObservationHeatmap";
+import { ObservationFilters, applyFilters, INITIAL_FILTERS, type FilterState } from "./ObservationFilters";
+import { OutbreakPrediction } from "./OutbreakPrediction";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -53,74 +56,75 @@ export function DoctorDashboard({
   casesOverTime,
   symptomChartData,
 }: DoctorDashboardProps) {
-  const totalReports = observations.length;
-  const highRiskCount = observations.filter((o) => o.rule_risk_level === "High").length;
-  const mediumRiskCount = observations.filter((o) => o.rule_risk_level === "Medium").length;
-  const activeAlerts = observations.filter((o) => o.outbreak_alert).length;
-  const totalCases = observations.reduce((sum, o) => sum + o.case_count, 0);
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
-  const pendingCount = observations.filter((o) => o.status === "pending").length;
-  const validatedCount = observations.filter((o) => o.status === "validated").length;
-  const rejectedCount = observations.filter((o) => o.status === "rejected").length;
+  const filtered = useMemo(() => applyFilters(observations, filters), [observations, filters]);
 
-  const uniqueCountries = new Set(observations.map((o) => o.country)).size;
-  const uniqueRegions = new Set(observations.map((o) => o.region)).size;
+  const totalReports = filtered.length;
+  const highRiskCount = filtered.filter((o) => o.rule_risk_level === "High").length;
+  const mediumRiskCount = filtered.filter((o) => o.rule_risk_level === "Medium").length;
+  const activeAlerts = filtered.filter((o) => o.outbreak_alert).length;
+  const totalCases = filtered.reduce((sum, o) => sum + o.case_count, 0);
 
-  const highRiskPending = observations
+  const pendingCount = filtered.filter((o) => o.status === "pending").length;
+  const validatedCount = filtered.filter((o) => o.status === "validated").length;
+  const rejectedCount = filtered.filter((o) => o.status === "rejected").length;
+
+  const uniqueCountries = new Set(filtered.map((o) => o.country)).size;
+  const uniqueRegions = new Set(filtered.map((o) => o.region)).size;
+
+  const highRiskPending = filtered
     .filter((o) => o.rule_risk_level === "High" && o.status === "pending")
     .slice(0, 5);
 
-  const recentAlerts = observations.filter((o) => o.outbreak_alert).slice(0, 5);
+  const recentAlerts = filtered.filter((o) => o.outbreak_alert).slice(0, 5);
 
-  // Disease prediction summary
-  const diseaseFrequency = observations
+  const diseaseFrequency = filtered
     .flatMap((o) => o.predicted_diseases || [])
-    .reduce((acc: Record<string, number>, d) => {
-      acc[d] = (acc[d] || 0) + 1;
-      return acc;
-    }, {});
-  const topDiseases = Object.entries(diseaseFrequency)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
+    .reduce((acc: Record<string, number>, d) => { acc[d] = (acc[d] || 0) + 1; return acc; }, {});
+  const topDiseases = Object.entries(diseaseFrequency).sort(([, a], [, b]) => (b as number) - (a as number)).slice(0, 5);
 
   const validationRate = totalReports > 0 ? Math.round((validatedCount / totalReports) * 100) : 0;
 
+  // Filtered chart data
+  const filteredCasesOverTime = filtered
+    .reduce((acc: { date: string; cases: number }[], obs) => {
+      const date = format(new Date(obs.created_at), "MMM dd");
+      const existing = acc.find((d) => d.date === date);
+      if (existing) existing.cases += obs.case_count;
+      else acc.push({ date, cases: obs.case_count });
+      return acc;
+    }, [])
+    .reverse()
+    .slice(-14);
+
+  const filteredSymptomData = (() => {
+    const freq = filtered.flatMap((o) => o.symptoms).reduce((acc: Record<string, number>, s) => { acc[s] = (acc[s] || 0) + 1; return acc; }, {});
+    return Object.entries(freq).map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count: count as number })).sort((a, b) => b.count - a.count);
+  })();
+
   return (
     <div className="space-y-6">
-      {/* Professional header with dark gradient */}
+      {/* Professional header */}
       <div className="rounded-2xl bg-gradient-to-br from-[hsl(var(--foreground))] to-[hsl(160_25%_18%)] p-6 sm:p-8 text-primary-foreground">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Microscope className="h-5 w-5 opacity-80" />
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70">
-                Clinical Intelligence Hub
-              </span>
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70">Clinical Intelligence Hub</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold">
-              Dr. {displayName || "Doctor"}
-            </h1>
-            <p className="opacity-70 mt-1 text-sm">
-              Real-time disease surveillance • Outbreak early warning • Expert validation
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold">Dr. {displayName || "Doctor"}</h1>
+            <p className="opacity-70 mt-1 text-sm">Real-time disease surveillance • Outbreak early warning • Expert validation</p>
           </div>
           <div className="flex gap-3">
             <Button variant="secondary" asChild>
-              <Link to="/submit">
-                <FileText className="mr-2 h-4 w-4" />
-                Submit Report
-              </Link>
+              <Link to="/submit"><FileText className="mr-2 h-4 w-4" />Submit Report</Link>
             </Button>
             <Button className="bg-accent hover:bg-accent/90 text-accent-foreground" asChild>
-              <Link to="/validations">
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Review Cases ({pendingCount})
-              </Link>
+              <Link to="/validations"><ShieldCheck className="mr-2 h-4 w-4" />Review Cases ({pendingCount})</Link>
             </Button>
           </div>
         </div>
-
-        {/* Inline alert strip */}
         {(highRiskCount > 0 || activeAlerts > 0) && (
           <div className="mt-4 pt-4 border-t border-white/10 flex flex-wrap gap-4 text-sm">
             {highRiskCount > 0 && (
@@ -139,6 +143,14 @@ export function DoctorDashboard({
         )}
       </div>
 
+      {/* Filters */}
+      <ObservationFilters
+        observations={observations}
+        filters={filters}
+        onFiltersChange={setFilters}
+        filteredCount={filtered.length}
+      />
+
       {/* Key metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard icon={FileText} label="Total Reports" value={totalReports} accent="primary" />
@@ -152,13 +164,8 @@ export function DoctorDashboard({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
-                Validation Pipeline
-              </h3>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/validations">View All <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
-              </Button>
+              <h3 className="font-semibold text-sm flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" />Validation Pipeline</h3>
+              <Button variant="ghost" size="sm" asChild><Link to="/validations">View All <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
             </div>
             <div className="space-y-3">
               <PipelineRow icon={Clock} label="Awaiting Review" count={pendingCount} color="text-amber-600" />
@@ -168,10 +175,7 @@ export function DoctorDashboard({
             {pendingCount > 0 && (
               <div className="mt-4 pt-3 border-t border-border">
                 <Button className="w-full" size="sm" asChild>
-                  <Link to="/validations">
-                    <Zap className="mr-2 h-3.5 w-3.5" />
-                    Review {pendingCount} Pending Cases
-                  </Link>
+                  <Link to="/validations"><Zap className="mr-2 h-3.5 w-3.5" />Review {pendingCount} Pending Cases</Link>
                 </Button>
               </div>
             )}
@@ -180,28 +184,15 @@ export function DoctorDashboard({
 
         <Card>
           <CardContent className="pt-6">
-            <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-              <Globe className="h-4 w-4 text-primary" />
-              Geographic Coverage
-            </h3>
+            <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><Globe className="h-4 w-4 text-primary" />Geographic Coverage</h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2.5">
-                  <Globe className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{uniqueCountries}</p>
-                  <p className="text-xs text-muted-foreground">Countries Monitored</p>
-                </div>
+                <div className="rounded-lg bg-primary/10 p-2.5"><Globe className="h-5 w-5 text-primary" /></div>
+                <div><p className="text-2xl font-bold">{uniqueCountries}</p><p className="text-xs text-muted-foreground">Countries Monitored</p></div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-accent/10 p-2.5">
-                  <MapPin className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{uniqueRegions}</p>
-                  <p className="text-xs text-muted-foreground">Active Regions</p>
-                </div>
+                <div className="rounded-lg bg-accent/10 p-2.5"><MapPin className="h-5 w-5 text-accent" /></div>
+                <div><p className="text-2xl font-bold">{uniqueRegions}</p><p className="text-xs text-muted-foreground">Active Regions</p></div>
               </div>
             </div>
           </CardContent>
@@ -209,29 +200,22 @@ export function DoctorDashboard({
 
         <Card>
           <CardContent className="pt-6">
-            <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-              <HeartPulse className="h-4 w-4 text-primary" />
-              Validation Rate
-            </h3>
+            <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-primary" />Validation Rate</h3>
             <div className="flex items-end gap-2 mb-2">
               <p className="text-4xl font-bold text-primary">{validationRate}%</p>
               <p className="text-sm text-muted-foreground mb-1">validated</p>
             </div>
             <div className="w-full bg-muted rounded-full h-2.5 mt-3">
-              <div
-                className="bg-primary rounded-full h-2.5 transition-all"
-                style={{ width: `${validationRate}%` }}
-              />
+              <div className="bg-primary rounded-full h-2.5 transition-all" style={{ width: `${validationRate}%` }} />
             </div>
             <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-              <span>{validatedCount} validated</span>
-              <span>{totalReports} total</span>
+              <span>{validatedCount} validated</span><span>{totalReports} total</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Risk distribution summary */}
+      {/* Risk + Disease cards */}
       <div className="grid sm:grid-cols-2 gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -243,13 +227,9 @@ export function DoctorDashboard({
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
-            <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-              <Microscope className="h-4 w-4 text-primary" />
-              Top Predicted Diseases
-            </h3>
+            <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><Microscope className="h-4 w-4 text-primary" />Top Predicted Diseases</h3>
             {topDiseases.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No AI predictions yet</p>
             ) : (
@@ -257,7 +237,7 @@ export function DoctorDashboard({
                 {topDiseases.map(([disease, count]) => (
                   <div key={disease} className="flex items-center justify-between">
                     <span className="text-sm font-medium capitalize">{disease}</span>
-                    <Badge variant="secondary">{count} cases</Badge>
+                    <Badge variant="secondary">{count as number} cases</Badge>
                   </div>
                 ))}
               </div>
@@ -266,20 +246,20 @@ export function DoctorDashboard({
         </Card>
       </div>
 
+      {/* AI Prediction */}
+      <OutbreakPrediction observations={filtered} />
+
       {/* Heatmap */}
-      <ObservationHeatmap observations={observations} />
+      <ObservationHeatmap observations={filtered} />
 
       {/* Charts */}
-      <OverviewCharts casesOverTime={casesOverTime} symptomChartData={symptomChartData} />
+      <OverviewCharts casesOverTime={filteredCasesOverTime} symptomChartData={filteredSymptomData} />
 
-      {/* High-risk pending + outbreak alerts */}
+      {/* High-risk + alerts */}
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="border-[hsl(var(--risk-high)/0.2)]">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-[hsl(var(--risk-high))]" />
-              High-Risk Pending Review
-            </CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-[hsl(var(--risk-high))]" />High-Risk Pending Review</CardTitle>
             <CardDescription>These reports require urgent medical assessment</CardDescription>
           </CardHeader>
           <CardContent>
@@ -287,12 +267,8 @@ export function DoctorDashboard({
               <p className="text-sm text-muted-foreground text-center py-6">✅ No high-risk reports pending review</p>
             ) : (
               <div className="space-y-3">
-                {highRiskPending.map((obs) => (
-                  <ObservationRow key={obs.id} obs={obs} />
-                ))}
-                <Button variant="outline" className="w-full mt-2" asChild>
-                  <Link to="/validations">Review All Pending Cases</Link>
-                </Button>
+                {highRiskPending.map((obs) => (<ObservationRow key={obs.id} obs={obs} />))}
+                <Button variant="outline" className="w-full mt-2" asChild><Link to="/validations">Review All Pending Cases</Link></Button>
               </div>
             )}
           </CardContent>
@@ -300,10 +276,7 @@ export function DoctorDashboard({
 
         <Card className="border-accent/20">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="h-4 w-4 text-accent" />
-              Active Outbreak Alerts
-            </CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Activity className="h-4 w-4 text-accent" />Active Outbreak Alerts</CardTitle>
             <CardDescription>Flagged observations indicating potential outbreaks</CardDescription>
           </CardHeader>
           <CardContent>
@@ -311,9 +284,7 @@ export function DoctorDashboard({
               <p className="text-sm text-muted-foreground text-center py-6">No active outbreak alerts</p>
             ) : (
               <div className="space-y-3">
-                {recentAlerts.map((obs) => (
-                  <ObservationRow key={obs.id} obs={obs} />
-                ))}
+                {recentAlerts.map((obs) => (<ObservationRow key={obs.id} obs={obs} />))}
               </div>
             )}
           </CardContent>
@@ -331,10 +302,7 @@ function MetricCard({ icon: Icon, label, value, accent, highlight }: { icon: any
           <div className={`rounded-lg p-2.5 ${accent === "destructive" ? "bg-[hsl(var(--risk-high)/0.1)]" : accent === "accent" ? "bg-accent/10" : "bg-primary/10"}`}>
             <Icon className={`h-5 w-5 ${accent === "destructive" ? "text-[hsl(var(--risk-high))]" : accent === "accent" ? "text-accent" : "text-primary"}`} />
           </div>
-          <div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-          </div>
+          <div><p className="text-2xl font-bold">{value}</p><p className="text-xs text-muted-foreground">{label}</p></div>
         </div>
       </CardContent>
     </Card>
@@ -344,10 +312,7 @@ function MetricCard({ icon: Icon, label, value, accent, highlight }: { icon: any
 function PipelineRow({ icon: Icon, label, count, color }: { icon: any; label: string; count: number; color: string }) {
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Icon className={`h-4 w-4 ${color}`} />
-        <span className="text-sm">{label}</span>
-      </div>
+      <div className="flex items-center gap-2"><Icon className={`h-4 w-4 ${color}`} /><span className="text-sm">{label}</span></div>
       <span className="font-semibold text-sm">{count}</span>
     </div>
   );
@@ -357,13 +322,8 @@ function RiskBar({ label, count, total, color }: { label: string; count: number;
   const pct = total > 0 ? (count / total) * 100 : 0;
   return (
     <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">{count} ({Math.round(pct)}%)</span>
-      </div>
-      <div className="w-full bg-muted rounded-full h-2">
-        <div className={`${color} rounded-full h-2 transition-all`} style={{ width: `${pct}%` }} />
-      </div>
+      <div className="flex justify-between text-sm mb-1"><span className="font-medium">{label}</span><span className="text-muted-foreground">{count} ({Math.round(pct)}%)</span></div>
+      <div className="w-full bg-muted rounded-full h-2"><div className={`${color} rounded-full h-2 transition-all`} style={{ width: `${pct}%` }} /></div>
     </div>
   );
 }
@@ -378,17 +338,11 @@ function ObservationRow({ obs }: { obs: Observation }) {
           <Badge className={getRiskBadgeClasses(obs.rule_risk_level)}>{obs.rule_risk_level}</Badge>
         </div>
         <div className="flex flex-wrap gap-1">
-          {obs.symptoms.slice(0, 3).map((s) => (
-            <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
-          ))}
-          {obs.symptoms.length > 3 && (
-            <Badge variant="secondary" className="text-xs">+{obs.symptoms.length - 3}</Badge>
-          )}
+          {obs.symptoms.slice(0, 3).map((s) => (<Badge key={s} variant="secondary" className="text-xs">{s}</Badge>))}
+          {obs.symptoms.length > 3 && <Badge variant="secondary" className="text-xs">+{obs.symptoms.length - 3}</Badge>}
         </div>
       </div>
-      <span className="text-xs text-muted-foreground whitespace-nowrap">
-        {format(new Date(obs.created_at), "MMM dd")}
-      </span>
+      <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(obs.created_at), "MMM dd")}</span>
     </div>
   );
 }
