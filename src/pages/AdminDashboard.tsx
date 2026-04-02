@@ -109,7 +109,7 @@ export default function AdminDashboard() {
 
       // Add new role
       if (newRole !== "none") {
-        await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
+        await supabase.from("user_roles").insert({ user_id: userId, role: newRole as "volunteer" | "doctor" | "admin" });
       }
 
       toast({ title: "Role updated", description: `User role changed to ${newRole}` });
