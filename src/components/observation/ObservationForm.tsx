@@ -95,7 +95,7 @@ export function ObservationForm({ onSuccess }: ObservationFormProps) {
     setSubmitting(true);
     const riskLevel = calculateRiskLevel(symptoms, caseCount);
 
-    const { error } = await supabase.from("observations").insert({
+    const { data: obsData, error } = await supabase.from("observations").insert({
       volunteer_id: user.id,
       country: country.trim(),
       region: region.trim(),
@@ -106,7 +106,7 @@ export function ObservationForm({ onSuccess }: ObservationFormProps) {
       rainfall: rainfall ? parseFloat(rainfall) : null,
       notes: notes.trim(),
       rule_risk_level: riskLevel,
-    });
+    }).select("id").single();
 
     setSubmitting(false);
 
@@ -117,6 +117,11 @@ export function ObservationForm({ onSuccess }: ObservationFormProps) {
         variant: "destructive",
       });
     } else {
+      // Notify doctors if high risk
+      if (riskLevel === "High" && obsData) {
+        notifyDoctors(obsData.id, city.trim(), region.trim(), symptoms);
+      }
+
       toast({
         title: "Observation submitted",
         description: `Risk level assessed as ${riskLevel}. Your report has been recorded.`,
