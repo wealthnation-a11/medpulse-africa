@@ -26,8 +26,16 @@ interface Observation {
 
 export default function Dashboard() {
   const { hasRole, displayName } = useAuth();
+  const navigate = useNavigate();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (hasRole("admin") && !hasRole("doctor") && !hasRole("volunteer")) {
+      navigate("/admin", { replace: true });
+    }
+  }, [hasRole, navigate]);
 
   useEffect(() => {
     fetchObservations();
