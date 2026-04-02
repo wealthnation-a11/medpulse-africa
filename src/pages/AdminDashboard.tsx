@@ -104,7 +104,7 @@ export default function AdminDashboard() {
 
       const currentNonAdmin = user.roles.filter((r) => r !== "admin");
       for (const role of currentNonAdmin) {
-        await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
+        await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as "volunteer" | "doctor" | "admin");
       }
 
       // Add new role
