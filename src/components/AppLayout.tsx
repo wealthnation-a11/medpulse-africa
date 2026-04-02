@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   User,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const navItems = [
   { label: "Submit Observation", href: "/submit", icon: FileText, roles: ["volunteer", "doctor"] as const },
   { label: "My Submissions", href: "/my-submissions", icon: ClipboardList, roles: ["volunteer", "doctor"] as const },
   { label: "Validations", href: "/validations", icon: ShieldCheck, roles: ["doctor"] as const },
+  { label: "Admin Panel", href: "/admin", icon: Settings, roles: ["admin"] as const },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {

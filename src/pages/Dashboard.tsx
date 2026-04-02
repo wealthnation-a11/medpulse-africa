@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
@@ -25,8 +26,16 @@ interface Observation {
 
 export default function Dashboard() {
   const { hasRole, displayName } = useAuth();
+  const navigate = useNavigate();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (hasRole("admin") && !hasRole("doctor") && !hasRole("volunteer")) {
+      navigate("/admin", { replace: true });
+    }
+  }, [hasRole, navigate]);
 
   useEffect(() => {
     fetchObservations();
