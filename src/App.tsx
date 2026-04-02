@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminSettings from "./pages/AdminSettings";
 import SubmitObservation from "./pages/SubmitObservation";
 import DoctorValidations from "./pages/DoctorValidations";
 import MySubmissionsPage from "./pages/MySubmissions";
