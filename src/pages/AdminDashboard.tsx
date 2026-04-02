@@ -125,7 +125,7 @@ export default function AdminDashboard() {
         await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
         toast({ title: "Admin removed" });
       } else {
-        await supabase.from("user_roles").insert({ user_id: userId, role: "admin" as any });
+        await supabase.from("user_roles").insert({ user_id: userId, role: "admin" as const });
         toast({ title: "Admin granted" });
       }
       fetchData();
