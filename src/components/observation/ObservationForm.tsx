@@ -70,6 +70,37 @@ export function ObservationForm({ onSuccess }: ObservationFormProps) {
     setNotes("");
   };
 
+  const notifyDoctors = async (obsId: string, obsCity: string, obsRegion: string, obsSymptoms: string[]) => {
+    try {
+      const { data: settings } = await supabase
+        .from("platform_settings")
+        .select("notify_doctors_high_risk")
+        .limit(1)
+        .single();
+
+      if (!settings?.notify_doctors_high_risk) return;
+
+      const { data: doctorRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "doctor" as const);
+
+      if (!doctorRoles || doctorRoles.length === 0) return;
+
+      const notifications = doctorRoles.map((dr) => ({
+        user_id: dr.user_id,
+        title: "🚨 High-Risk Observation",
+        message: `A high-risk observation was submitted from ${obsCity}, ${obsRegion}. Symptoms: ${obsSymptoms.slice(0, 3).join(", ")}${obsSymptoms.length > 3 ? "..." : ""}. Requires immediate review.`,
+        type: "high_risk",
+        related_id: obsId,
+      }));
+
+      await supabase.from("notifications").insert(notifications);
+    } catch (err) {
+      console.error("Failed to send notifications:", err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -95,7 +126,7 @@ export function ObservationForm({ onSuccess }: ObservationFormProps) {
     setSubmitting(true);
     const riskLevel = calculateRiskLevel(symptoms, caseCount);
 
-    const { error } = await supabase.from("observations").insert({
+    const { data: obsData, error } = await supabase.from("observations").insert({
       volunteer_id: user.id,
       country: country.trim(),
       region: region.trim(),
@@ -106,7 +137,7 @@ export function ObservationForm({ onSuccess }: ObservationFormProps) {
       rainfall: rainfall ? parseFloat(rainfall) : null,
       notes: notes.trim(),
       rule_risk_level: riskLevel,
-    });
+    }).select("id").single();
 
     setSubmitting(false);
 
@@ -117,6 +148,11 @@ export function ObservationForm({ onSuccess }: ObservationFormProps) {
         variant: "destructive",
       });
     } else {
+      // Notify doctors if high risk
+      if (riskLevel === "High" && obsData) {
+        notifyDoctors(obsData.id, city.trim(), region.trim(), symptoms);
+      }
+
       toast({
         title: "Observation submitted",
         description: `Risk level assessed as ${riskLevel}. Your report has been recorded.`,
