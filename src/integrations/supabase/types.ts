@@ -55,6 +55,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          related_id?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       observations: {
         Row: {
           ai_risk_level: string | null
@@ -115,6 +148,45 @@ export type Database = {
           temperature?: number | null
           updated_at?: string
           volunteer_id?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          auto_flag_high_risk: boolean
+          created_at: string
+          high_risk_threshold: number
+          id: string
+          medium_risk_threshold: number
+          notify_admins_new_users: boolean
+          notify_doctors_high_risk: boolean
+          notify_doctors_outbreak: boolean
+          outbreak_alert_threshold: number
+          updated_at: string
+        }
+        Insert: {
+          auto_flag_high_risk?: boolean
+          created_at?: string
+          high_risk_threshold?: number
+          id?: string
+          medium_risk_threshold?: number
+          notify_admins_new_users?: boolean
+          notify_doctors_high_risk?: boolean
+          notify_doctors_outbreak?: boolean
+          outbreak_alert_threshold?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_flag_high_risk?: boolean
+          created_at?: string
+          high_risk_threshold?: number
+          id?: string
+          medium_risk_threshold?: number
+          notify_admins_new_users?: boolean
+          notify_doctors_high_risk?: boolean
+          notify_doctors_outbreak?: boolean
+          outbreak_alert_threshold?: number
+          updated_at?: string
         }
         Relationships: []
       }
