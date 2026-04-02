@@ -113,7 +113,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           {/* User menu */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                 <User className="h-4 w-4 text-primary" />
