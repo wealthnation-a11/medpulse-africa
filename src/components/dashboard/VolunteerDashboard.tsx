@@ -1,8 +1,13 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCharts } from "./OverviewCharts";
+import { ScreeningResults } from "@/components/screening/ScreeningResults";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import {
   FileText,
   ClipboardList,
@@ -16,6 +21,11 @@ import {
   Users,
   Shield,
   Sparkles,
+  FlaskConical,
+  Dna,
+  Activity,
+  Brain,
+  Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getRiskBadgeClasses } from "@/lib/riskCalculation";
