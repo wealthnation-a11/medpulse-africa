@@ -1,29 +1,36 @@
 import { motion } from "framer-motion";
-import { Users, Brain, Bell } from "lucide-react";
+import { FlaskConical, Dna, Brain, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const steps = [
   {
-    icon: Users,
+    icon: FlaskConical,
     step: "01",
-    title: "Community Reporting",
+    title: "Sample Collection",
     description:
-      "Volunteers submit health observations including symptoms, location, number of cases, and environmental conditions from across Africa.",
+      "Submit blood test results, genetic screening data, or biomarker panels through our secure diagnostic portal.",
+  },
+  {
+    icon: Dna,
+    step: "02",
+    title: "Blood & Genetic Analysis",
+    description:
+      "Advanced analysis of CBC, tumor markers, lipid panels, BRCA mutations, and 50+ biomarkers against clinical reference ranges.",
   },
   {
     icon: Brain,
-    step: "02",
-    title: "Risk & AI Analysis",
+    step: "03",
+    title: "AI Biomarker Detection",
     description:
-      "Rule-based logic and AI analyze patterns, predict possible diseases, and calculate risk levels with confidence scores.",
+      "Our AI engine cross-references results with family history, age, and patterns to predict disease risks years ahead.",
   },
   {
-    icon: Bell,
-    step: "03",
-    title: "Alerts & Action",
+    icon: ShieldCheck,
+    step: "04",
+    title: "Early Intervention",
     description:
-      "Doctors validate reports, dashboards update in real time, and alerts are sent to responders to enable rapid intervention.",
+      "Doctors review AI assessments, validate findings, and recommend preventive actions before conditions develop.",
   },
 ];
 
@@ -42,16 +49,15 @@ export const HowItWorks = () => {
             How It Works
           </p>
           <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            From Observation to Action in Three Steps
+            From Sample to Early Detection in Four Steps
           </h2>
           <p className="text-muted-foreground">
-            MedPulse transforms grassroots health data into actionable intelligence through a simple, powerful pipeline.
+            MedPulse transforms diagnostic data into life-saving insights through AI-powered analysis and expert validation.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12 relative">
-          {/* Connecting line */}
-          <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+          <div className="hidden lg:block absolute top-16 left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
 
           {steps.map((s, i) => (
             <motion.div
@@ -60,7 +66,7 @@ export const HowItWorks = () => {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
+              transition={{ duration: 0.5, delay: i * 0.12 }}
             >
               <div className="relative z-10 mb-6">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary shadow-lg shadow-primary/20">
@@ -70,12 +76,8 @@ export const HowItWorks = () => {
                   {s.step}
                 </span>
               </div>
-              <h3 className="font-display text-xl font-bold text-foreground mb-3">
-                {s.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-                {s.description}
-              </p>
+              <h3 className="font-display text-xl font-bold text-foreground mb-3">{s.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">{s.description}</p>
             </motion.div>
           ))}
         </div>
@@ -88,7 +90,7 @@ export const HowItWorks = () => {
           transition={{ delay: 0.5 }}
         >
           <Button size="lg" className="font-semibold" asChild>
-            <Link to="/auth">Become a Volunteer</Link>
+            <Link to="/auth">Start Your Screening</Link>
           </Button>
         </motion.div>
       </div>

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Stethoscope, Users, ShieldCheck } from "lucide-react";
+import { ArrowRight, Stethoscope, Users, ShieldCheck, FlaskConical } from "lucide-react";
 
 export const CTABanner = () => {
   return (
@@ -18,11 +18,11 @@ export const CTABanner = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary-foreground mb-6 leading-tight">
-            See Something. Report It.{" "}
-            <span className="text-accent">Save Lives.</span>
+            Early Detection.{" "}
+            <span className="text-accent">Better Outcomes.</span>
           </h2>
           <p className="text-primary-foreground/80 text-lg mb-12 max-w-lg mx-auto">
-            Every observation you submit helps build a healthier, safer Africa. Join the MedPulse network today.
+            Submit your screening data today and let AI analyze your health risks before they become problems.
           </p>
         </motion.div>
 
@@ -35,13 +35,13 @@ export const CTABanner = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-foreground/15 mx-auto mb-4">
-              <Users className="h-7 w-7 text-primary-foreground" />
+              <FlaskConical className="h-7 w-7 text-primary-foreground" />
             </div>
             <h3 className="font-display text-xl font-bold text-primary-foreground mb-2">
-              I'm a Volunteer
+              I'm a Patient
             </h3>
             <p className="text-primary-foreground/70 text-sm mb-6">
-              Report health observations from your community and help detect outbreaks early.
+              Submit your blood tests, genetic data, and biomarkers for AI-powered disease risk analysis.
             </p>
             <Button
               size="lg"
@@ -49,8 +49,8 @@ export const CTABanner = () => {
               asChild
             >
               <Link to="/auth?role=volunteer">
-                <Stethoscope className="mr-2 h-4 w-4" />
-                Join as Volunteer
+                <Users className="mr-2 h-4 w-4" />
+                Start Screening
               </Link>
             </Button>
           </motion.div>
@@ -69,7 +69,7 @@ export const CTABanner = () => {
               I'm a Doctor
             </h3>
             <p className="text-primary-foreground/70 text-sm mb-6">
-              Validate reports, support early detection, and guide public health responses.
+              Review AI predictions, validate screening results, and guide patients toward early intervention.
             </p>
             <Button
               size="lg"
@@ -77,7 +77,7 @@ export const CTABanner = () => {
               asChild
             >
               <Link to="/auth?role=doctor">
-                <ShieldCheck className="mr-2 h-4 w-4" />
+                <Stethoscope className="mr-2 h-4 w-4" />
                 Join as Doctor
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
