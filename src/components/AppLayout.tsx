@@ -14,12 +14,14 @@ import {
   Menu,
   User,
   Settings,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Submit Observation", href: "/submit", icon: FileText, roles: ["volunteer", "doctor"] as const },
+  { label: "Submit Screening", href: "/submit-screening", icon: FlaskConical, roles: ["volunteer", "doctor"] as const },
   { label: "My Submissions", href: "/my-submissions", icon: ClipboardList, roles: ["volunteer", "doctor"] as const },
   { label: "Validations", href: "/validations", icon: ShieldCheck, roles: ["doctor"] as const },
   { label: "Admin Panel", href: "/admin", icon: Settings, roles: ["admin"] as const },
