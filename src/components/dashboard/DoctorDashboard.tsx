@@ -9,6 +9,7 @@ import { ObservationHeatmap } from "./ObservationHeatmap";
 import { ObservationFilters, applyFilters, INITIAL_FILTERS, type FilterState } from "./ObservationFilters";
 import { OutbreakPrediction } from "./OutbreakPrediction";
 import { ScreeningIntelligence } from "./ScreeningIntelligence";
+import {
   ShieldCheck,
   AlertTriangle,
   Activity,
@@ -24,6 +25,7 @@ import { ScreeningIntelligence } from "./ScreeningIntelligence";
   BarChart3,
   Zap,
   HeartPulse,
+  FlaskConical,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getRiskBadgeClasses } from "@/lib/riskCalculation";
