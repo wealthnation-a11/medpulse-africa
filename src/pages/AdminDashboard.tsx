@@ -439,6 +439,9 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Screening Analytics */}
+        <ScreeningAnalyticsSection />
+
         {/* Heatmap */}
         <ObservationHeatmap observations={observations} />
 
