@@ -1,21 +1,26 @@
 import { motion } from "framer-motion";
-import { Shield, Globe, HeartPulse } from "lucide-react";
+import { Shield, Globe, HeartPulse, Brain } from "lucide-react";
 
 const values = [
   {
+    icon: Brain,
+    title: "AI-Powered Detection",
+    description: "Advanced machine learning analyzes biomarkers, genetic data, and health patterns to detect disease risks years before symptoms appear.",
+  },
+  {
     icon: HeartPulse,
-    title: "Community-Driven",
-    description: "Every report from the ground strengthens our collective defense against outbreaks.",
+    title: "Comprehensive Screening",
+    description: "Blood tests, genetic panels, and biomarker tracking work together to provide a complete picture of your health trajectory.",
   },
   {
     icon: Globe,
     title: "Pan-African Coverage",
-    description: "Designed for the continent's diversity with flexible, location-agnostic data collection.",
+    description: "Designed for Africa's healthcare needs with accessible screening tools and community-driven outbreak surveillance.",
   },
   {
     icon: Shield,
     title: "Expert-Validated",
-    description: "Doctors and health professionals review and validate flagged observations.",
+    description: "Every AI prediction is reviewed by qualified doctors who validate findings and recommend personalized interventions.",
   },
 ];
 
@@ -34,19 +39,19 @@ export const AboutSection = () => {
               Our Mission
             </p>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-6">
-              Strengthening Africa's Health Defense
+              Preventing Disease Through Early Detection
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              MedPulse strengthens Africa's public health systems by enabling early
-              detection through community participation, intelligent data analysis,
-              and expert validation — helping prevent outbreaks before they become
-              crises.
+              MedPulse is building Africa's most advanced early disease detection platform —
+              combining AI-powered biomarker analysis with community health surveillance to
+              detect cancer, heart disease, and chronic conditions years before they become
+              life-threatening.
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              We believe that the people closest to health events are the first line
-              of defense. By empowering volunteers with simple reporting tools and
-              connecting them with medical professionals, we create a responsive
-              surveillance network that spans the continent.
+              We believe that everyone deserves access to predictive healthcare. By making
+              advanced screening analysis accessible and connecting patients with medical
+              experts, we're transforming how diseases are detected and prevented across
+              the continent.
             </p>
           </motion.div>
 
@@ -64,12 +69,8 @@ export const AboutSection = () => {
                   <v.icon className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-display text-base font-bold text-foreground mb-1">
-                    {v.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {v.description}
-                  </p>
+                  <h3 className="font-display text-base font-bold text-foreground mb-1">{v.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{v.description}</p>
                 </div>
               </motion.div>
             ))}

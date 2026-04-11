@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      biomarker_profiles: {
+        Row: {
+          biomarker_name: string
+          created_at: string
+          id: string
+          is_abnormal: boolean
+          reference_range_high: number | null
+          reference_range_low: number | null
+          screening_id: string
+          unit: string
+          value: number
+        }
+        Insert: {
+          biomarker_name: string
+          created_at?: string
+          id?: string
+          is_abnormal?: boolean
+          reference_range_high?: number | null
+          reference_range_low?: number | null
+          screening_id: string
+          unit?: string
+          value: number
+        }
+        Update: {
+          biomarker_name?: string
+          created_at?: string
+          id?: string
+          is_abnormal?: boolean
+          reference_range_high?: number | null
+          reference_range_low?: number | null
+          screening_id?: string
+          unit?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biomarker_profiles_screening_id_fkey"
+            columns: ["screening_id"]
+            isOneToOne: false
+            referencedRelation: "health_screenings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disease_risk_assessments: {
+        Row: {
+          confidence: number
+          created_at: string
+          disease_name: string
+          id: string
+          recommended_actions: Json | null
+          risk_percentage: number
+          screening_id: string
+          time_horizon: string | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          disease_name: string
+          id?: string
+          recommended_actions?: Json | null
+          risk_percentage?: number
+          screening_id: string
+          time_horizon?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          disease_name?: string
+          id?: string
+          recommended_actions?: Json | null
+          risk_percentage?: number
+          screening_id?: string
+          time_horizon?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disease_risk_assessments_screening_id_fkey"
+            columns: ["screening_id"]
+            isOneToOne: false
+            referencedRelation: "health_screenings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_validations: {
         Row: {
           corrected_disease: string | null
@@ -54,6 +139,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      health_screenings: {
+        Row: {
+          ai_analysis_complete: boolean
+          clinical_notes: string | null
+          created_at: string
+          family_history: Json | null
+          id: string
+          patient_age: number
+          patient_sex: string
+          screening_type: string
+          status: string
+          submitted_by: string
+          test_results: Json
+          updated_at: string
+        }
+        Insert: {
+          ai_analysis_complete?: boolean
+          clinical_notes?: string | null
+          created_at?: string
+          family_history?: Json | null
+          id?: string
+          patient_age: number
+          patient_sex?: string
+          screening_type?: string
+          status?: string
+          submitted_by: string
+          test_results?: Json
+          updated_at?: string
+        }
+        Update: {
+          ai_analysis_complete?: boolean
+          clinical_notes?: string | null
+          created_at?: string
+          family_history?: Json | null
+          id?: string
+          patient_age?: number
+          patient_sex?: string
+          screening_type?: string
+          status?: string
+          submitted_by?: string
+          test_results?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {

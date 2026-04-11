@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCharts } from "./OverviewCharts";
 import { ObservationHeatmap } from "./ObservationHeatmap";
 import { ObservationFilters, applyFilters, INITIAL_FILTERS, type FilterState } from "./ObservationFilters";
 import { OutbreakPrediction } from "./OutbreakPrediction";
+import { ScreeningIntelligence } from "./ScreeningIntelligence";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -23,6 +25,7 @@ import {
   BarChart3,
   Zap,
   HeartPulse,
+  FlaskConical,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getRiskBadgeClasses } from "@/lib/riskCalculation";
@@ -114,11 +117,11 @@ export function DoctorDashboard({
               <span className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70">Clinical Intelligence Hub</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold">Dr. {displayName || "Doctor"}</h1>
-            <p className="opacity-70 mt-1 text-sm">Real-time disease surveillance • Outbreak early warning • Expert validation</p>
+            <p className="opacity-70 mt-1 text-sm">Early disease detection • Screening intelligence • Outbreak surveillance</p>
           </div>
           <div className="flex gap-3">
             <Button variant="secondary" asChild>
-              <Link to="/submit"><FileText className="mr-2 h-4 w-4" />Submit Report</Link>
+              <Link to="/submit-screening"><FlaskConical className="mr-2 h-4 w-4" />New Screening</Link>
             </Button>
             <Button className="bg-accent hover:bg-accent/90 text-accent-foreground" asChild>
               <Link to="/validations"><ShieldCheck className="mr-2 h-4 w-4" />Review Cases ({pendingCount})</Link>
@@ -142,6 +145,19 @@ export function DoctorDashboard({
           </div>
         )}
       </div>
+
+      {/* Tabs for Screening Intelligence vs Outbreak Surveillance */}
+      <Tabs defaultValue="screening" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="screening" className="flex items-center gap-2"><FlaskConical className="h-4 w-4" />Screening Intelligence</TabsTrigger>
+          <TabsTrigger value="surveillance" className="flex items-center gap-2"><Activity className="h-4 w-4" />Outbreak Surveillance</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="screening">
+          <ScreeningIntelligence />
+        </TabsContent>
+
+        <TabsContent value="surveillance" className="space-y-6">
 
       {/* Filters */}
       <ObservationFilters
@@ -290,6 +306,8 @@ export function DoctorDashboard({
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

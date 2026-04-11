@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, Shield, Activity, FileText, Globe, TrendingUp, AlertTriangle,
   Search, UserCog, Crown, Loader2, BarChart3, Microscope, HeartPulse,
-  Settings, Eye, Brain, MapPin, Zap,
+  Settings, Eye, Brain, MapPin, Zap, FlaskConical,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -439,6 +439,9 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Screening Analytics */}
+        <ScreeningAnalyticsSection />
+
         {/* Heatmap */}
         <ObservationHeatmap observations={observations} />
 
@@ -446,6 +449,59 @@ export default function AdminDashboard() {
         <OverviewCharts casesOverTime={casesOverTime} symptomChartData={symptomChartData} />
       </div>
     </AppLayout>
+  );
+}
+
+function ScreeningAnalyticsSection() {
+  const [stats, setStats] = useState({ total: 0, analyzed: 0, highRisk: 0, types: { blood_test: 0, genetic: 0, biomarker: 0 } });
+
+  useEffect(() => {
+    const fetch = async () => {
+      const [sRes, rRes] = await Promise.all([
+        supabase.from("health_screenings").select("screening_type, ai_analysis_complete"),
+        supabase.from("disease_risk_assessments").select("risk_percentage"),
+      ]);
+      if (sRes.data) {
+        const types = { blood_test: 0, genetic: 0, biomarker: 0 };
+        sRes.data.forEach((s: any) => { if (types[s.screening_type as keyof typeof types] !== undefined) types[s.screening_type as keyof typeof types]++; });
+        setStats({
+          total: sRes.data.length,
+          analyzed: sRes.data.filter((s: any) => s.ai_analysis_complete).length,
+          highRisk: rRes.data?.filter((r: any) => r.risk_percentage >= 60).length || 0,
+          types,
+        });
+      }
+    };
+    fetch();
+  }, []);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2"><FlaskConical className="h-4 w-4 text-primary" />Screening Analytics</CardTitle>
+        <CardDescription>System-wide health screening statistics</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-primary">{stats.total}</p>
+            <p className="text-xs text-muted-foreground">Total Screenings</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold">{stats.analyzed}</p>
+            <p className="text-xs text-muted-foreground">AI Analyzed</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-[hsl(var(--risk-high))]">{stats.highRisk}</p>
+            <p className="text-xs text-muted-foreground">High Risk Flags</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold">{stats.types.blood_test}/{stats.types.genetic}/{stats.types.biomarker}</p>
+            <p className="text-xs text-muted-foreground">Blood/Genetic/Biomarker</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -2,23 +2,23 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Stethoscope, Building2 } from "lucide-react";
+import { Users, Stethoscope, Building2, FlaskConical } from "lucide-react";
 
 const audiences = [
   {
     icon: Users,
-    title: "Volunteers & Citizens",
+    title: "Volunteers & Patients",
     description:
-      "Help protect your community by reporting health observations. Your data powers early outbreak detection and saves lives.",
+      "Submit health screenings, track your biomarkers over time, and receive AI-powered risk assessments. Your data helps detect diseases early and protect your community.",
     cta: "Join as Volunteer",
     href: "/auth",
     color: "primary" as const,
   },
   {
     icon: Stethoscope,
-    title: "Doctors & Health Experts",
+    title: "Doctors & Specialists",
     description:
-      "Validate risks, support early detection, and guide responses. Your expertise strengthens our disease intelligence network.",
+      "Access AI-analyzed screening data, validate risk predictions, review biomarker trends, and guide patients toward early intervention before diseases develop.",
     cta: "Join as Doctor",
     href: "/auth?role=doctor",
     color: "accent" as const,
@@ -27,7 +27,7 @@ const audiences = [
     icon: Building2,
     title: "NGOs & Health Authorities",
     description:
-      "Access real-time insights, alerts, and outbreak reports to coordinate public health responses across the continent.",
+      "Monitor population health trends, access early outbreak alerts, and leverage aggregate screening data for public health planning across the continent.",
     cta: "Partner with MedPulse",
     href: "#footer",
     color: "emerald-glow" as const,
@@ -64,8 +64,7 @@ export const AudienceCards = () => {
             Built for Everyone in the Health Chain
           </h2>
           <p className="text-muted-foreground">
-            Whether you're on the ground or in an office, MedPulse gives you the
-            tools to make a difference.
+            From patients seeking early detection to doctors guiding prevention — MedPulse empowers every stakeholder.
           </p>
         </motion.div>
 
@@ -83,12 +82,8 @@ export const AudienceCards = () => {
                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconBg[a.color]} mb-5`}>
                     <a.icon className={`h-6 w-6 ${iconText[a.color]}`} />
                   </div>
-                  <h3 className="font-display text-xl font-bold text-foreground mb-3">
-                    {a.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-grow">
-                    {a.description}
-                  </p>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-3">{a.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-grow">{a.description}</p>
                   <Button variant="outline" className="w-full font-medium" asChild>
                     <Link to={a.href}>{a.cta}</Link>
                   </Button>

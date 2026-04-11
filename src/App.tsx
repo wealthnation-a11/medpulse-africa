@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSettings from "./pages/AdminSettings";
 import SubmitObservation from "./pages/SubmitObservation";
+import SubmitScreening from "./pages/SubmitScreening";
 import DoctorValidations from "./pages/DoctorValidations";
 import MySubmissionsPage from "./pages/MySubmissions";
 import NotFound from "./pages/NotFound";
@@ -56,6 +57,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={["volunteer", "doctor"]}>
                   <SubmitObservation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/submit-screening"
+              element={
+                <ProtectedRoute requiredRole={["volunteer", "doctor"]}>
+                  <SubmitScreening />
                 </ProtectedRoute>
               }
             />

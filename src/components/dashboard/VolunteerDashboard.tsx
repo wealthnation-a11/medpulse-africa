@@ -1,8 +1,13 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewCharts } from "./OverviewCharts";
+import { ScreeningResults } from "@/components/screening/ScreeningResults";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import {
   FileText,
   ClipboardList,
@@ -16,6 +21,11 @@ import {
   Users,
   Shield,
   Sparkles,
+  FlaskConical,
+  Dna,
+  Activity,
+  Brain,
+  Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getRiskBadgeClasses } from "@/lib/riskCalculation";
@@ -49,6 +59,24 @@ export function VolunteerDashboard({
   casesOverTime,
   symptomChartData,
 }: VolunteerDashboardProps) {
+  const { user } = useAuth();
+  const [screenings, setScreenings] = useState<any[]>([]);
+  const [riskAssessments, setRiskAssessments] = useState<any[]>([]);
+  const [selectedScreeningId, setSelectedScreeningId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchScreenings = async () => {
+      const [sRes, rRes] = await Promise.all([
+        supabase.from("health_screenings").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false }),
+        supabase.from("disease_risk_assessments").select("*"),
+      ]);
+      if (sRes.data) setScreenings(sRes.data);
+      if (rRes.data) setRiskAssessments(rRes.data);
+    };
+    fetchScreenings();
+  }, [user]);
+
   const totalReports = observations.length;
   const highRiskCount = observations.filter((o) => o.rule_risk_level === "High").length;
   const activeAlerts = observations.filter((o) => o.outbreak_alert).length;
@@ -59,9 +87,10 @@ export function VolunteerDashboard({
   const uniqueRegions = new Set(observations.map((o) => o.region)).size;
 
   const recentObs = observations.slice(0, 5);
-
-  // Impact score — gamification element
   const impactScore = validatedCount * 10 + totalReports * 3 + totalCases;
+
+  const selectedScreening = selectedScreeningId ? screenings.find((s) => s.id === selectedScreeningId) : null;
+  const selectedRisks = selectedScreeningId ? riskAssessments.filter((r) => r.screening_id === selectedScreeningId) : [];
 
   return (
     <div className="space-y-6">
@@ -71,23 +100,108 @@ export function VolunteerDashboard({
           <div>
             <div className="flex items-center gap-2 mb-2">
               <HeartPulse className="h-5 w-5" />
-              <span className="text-sm font-medium opacity-90 uppercase tracking-wider">Community Health Reporter</span>
+              <span className="text-sm font-medium opacity-90 uppercase tracking-wider">Health & Wellness Hub</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold">
               Welcome back, {displayName || "Volunteer"} 👋
             </h1>
             <p className="mt-1 opacity-80 text-sm sm:text-base">
-              Your reports help protect communities across Africa. Every observation counts.
+              Track your health screenings, monitor biomarkers, and report community observations.
             </p>
           </div>
-          <Button variant="secondary" size="lg" asChild className="shrink-0">
-            <Link to="/submit">
-              <FileText className="mr-2 h-4 w-4" />
-              Submit Observation
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="lg" asChild className="shrink-0">
+              <Link to="/submit-screening">
+                <FlaskConical className="mr-2 h-4 w-4" />
+                Submit Screening
+              </Link>
+            </Button>
+            <Button variant="secondary" size="lg" asChild className="shrink-0">
+              <Link to="/submit">
+                <FileText className="mr-2 h-4 w-4" />
+                Report Observation
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="screenings" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="screenings" className="flex items-center gap-2"><FlaskConical className="h-4 w-4" />My Screenings</TabsTrigger>
+          <TabsTrigger value="observations" className="flex items-center gap-2"><Activity className="h-4 w-4" />Community Reports</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="screenings" className="space-y-6">
+          {selectedScreening ? (
+            <div className="space-y-4">
+              <Button variant="outline" size="sm" onClick={() => setSelectedScreeningId(null)}>← Back</Button>
+              <ScreeningResults screening={selectedScreening} riskAssessments={selectedRisks} />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatMini icon={FlaskConical} label="Screenings" value={screenings.length} />
+                <StatMini icon={CheckCircle2} label="Analyzed" value={screenings.filter((s) => s.ai_analysis_complete).length} />
+                <StatMini icon={Clock} label="Pending" value={screenings.filter((s) => !s.ai_analysis_complete).length} />
+                <StatMini icon={AlertTriangle} label="High Risk" value={riskAssessments.filter((r) => r.risk_percentage >= 60).length} highlight={riskAssessments.some((r) => r.risk_percentage >= 60)} />
+              </div>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base">Your Screenings</CardTitle>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/submit-screening"><FlaskConical className="mr-2 h-3.5 w-3.5" />New Screening</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {screenings.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Brain className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground text-sm">No screenings yet. Submit your first screening for AI-powered analysis!</p>
+                      <Button className="mt-4" asChild>
+                        <Link to="/submit-screening">Submit Your First Screening</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {screenings.map((s) => {
+                        const risks = riskAssessments.filter((r) => r.screening_id === s.id);
+                        const topRisk = risks.length > 0 ? Math.max(...risks.map((r: any) => r.risk_percentage)) : null;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => setSelectedScreeningId(s.id)}
+                            className="w-full flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors text-left"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium capitalize">{s.screening_type.replace("_", " ")}</span>
+                              {s.ai_analysis_complete ? (
+                                <Badge variant="secondary" className="text-xs">Analyzed</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Pending</Badge>
+                              )}
+                              {topRisk !== null && topRisk >= 60 && (
+                                <Badge className="bg-[hsl(var(--risk-high)/0.15)] text-[hsl(var(--risk-high))] text-xs">{topRisk}% risk</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">{format(new Date(s.created_at), "MMM dd")}</span>
+                              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="observations" className="space-y-6">
 
       {/* Impact + Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -183,6 +297,8 @@ export function VolunteerDashboard({
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
