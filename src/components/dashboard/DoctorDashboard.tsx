@@ -304,6 +304,8 @@ export function DoctorDashboard({
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
