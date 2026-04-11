@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, Shield, Activity, FileText, Globe, TrendingUp, AlertTriangle,
   Search, UserCog, Crown, Loader2, BarChart3, Microscope, HeartPulse,
-  Settings, Eye, Brain, MapPin, Zap,
+  Settings, Eye, Brain, MapPin, Zap, FlaskConical,
 } from "lucide-react";
 import { format } from "date-fns";
 
