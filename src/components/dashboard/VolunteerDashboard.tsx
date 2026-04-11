@@ -297,6 +297,8 @@ export function VolunteerDashboard({
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
