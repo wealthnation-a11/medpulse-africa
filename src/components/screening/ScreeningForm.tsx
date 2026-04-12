@@ -108,7 +108,17 @@ export function ScreeningForm() {
   const getFields = () => {
     if (screeningType === "blood_test") return BLOOD_TEST_FIELDS;
     if (screeningType === "genetic") return GENETIC_FIELDS;
+    if (screeningType === "imaging") return [];
     return BIOMARKER_FIELDS;
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setImageFiles((prev) => [...prev, ...files].slice(0, 5));
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
