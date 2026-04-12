@@ -423,8 +423,14 @@ export function ScreeningForm() {
                 <p className="font-semibold capitalize">{screeningType.replace("_", " ")}</p>
               </div>
               <div className="rounded-lg border border-border p-3">
-                <p className="text-muted-foreground text-xs mb-1">Tests Entered</p>
-                <p className="font-semibold">{Object.values(testResults).filter(Boolean).length} values</p>
+                <p className="text-muted-foreground text-xs mb-1">
+                  {screeningType === "imaging" ? "Images" : "Tests Entered"}
+                </p>
+                <p className="font-semibold">
+                  {screeningType === "imaging"
+                    ? `${imageFiles.length} image(s)`
+                    : `${Object.values(testResults).filter(Boolean).length} values`}
+                </p>
               </div>
             </div>
             {familyHistory.length > 0 && (
