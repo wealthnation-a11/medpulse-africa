@@ -135,6 +135,23 @@ export function ScreeningForm() {
         }
       });
 
+      // Upload images if imaging type
+      let imageUrls: string[] = [];
+      if (screeningType === "imaging" && imageFiles.length > 0) {
+        for (const file of imageFiles) {
+          const filePath = `${user.id}/${Date.now()}_${file.name}`;
+          const { error: uploadErr } = await supabase.storage
+            .from("medical-images")
+            .upload(filePath, file);
+          if (!uploadErr) {
+            imageUrls.push(filePath);
+          }
+        }
+        filteredResults["imaging_type"] = imagingType;
+        filteredResults["body_region"] = bodyRegion;
+        filteredResults["image_paths"] = imageUrls as any;
+      }
+
       const preliminaryRisk = calculateScreeningRisk(
         parseInt(patientAge) || 0,
         patientSex,
