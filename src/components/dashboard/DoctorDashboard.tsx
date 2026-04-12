@@ -9,6 +9,7 @@ import { ObservationHeatmap } from "./ObservationHeatmap";
 import { ObservationFilters, applyFilters, INITIAL_FILTERS, type FilterState } from "./ObservationFilters";
 import { OutbreakPrediction } from "./OutbreakPrediction";
 import { ScreeningIntelligence } from "./ScreeningIntelligence";
+import { PatientHealthTimeline } from "./PatientHealthTimeline";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -148,13 +149,18 @@ export function DoctorDashboard({
 
       {/* Tabs for Screening Intelligence vs Outbreak Surveillance */}
       <Tabs defaultValue="screening" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="screening" className="flex items-center gap-2"><FlaskConical className="h-4 w-4" />Screening Intelligence</TabsTrigger>
+          <TabsTrigger value="timeline" className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Health Timeline</TabsTrigger>
           <TabsTrigger value="surveillance" className="flex items-center gap-2"><Activity className="h-4 w-4" />Outbreak Surveillance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="screening">
           <ScreeningIntelligence />
+        </TabsContent>
+
+        <TabsContent value="timeline">
+          <PatientHealthTimeline />
         </TabsContent>
 
         <TabsContent value="surveillance" className="space-y-6">
