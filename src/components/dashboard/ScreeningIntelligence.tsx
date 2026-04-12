@@ -110,10 +110,11 @@ export function ScreeningIntelligence() {
       </div>
 
       {/* Screening types */}
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-4 gap-4">
         <TypeCard icon={FlaskConical} label="Blood Tests" count={typeCount("blood_test")} />
         <TypeCard icon={Dna} label="Genetic Screenings" count={typeCount("genetic")} />
         <TypeCard icon={Activity} label="Biomarker Panels" count={typeCount("biomarker")} />
+        <TypeCard icon={Eye} label="Medical Imaging" count={typeCount("imaging")} />
       </div>
 
       {/* Top Diseases */}
