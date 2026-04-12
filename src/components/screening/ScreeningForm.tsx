@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowRight, ArrowLeft, FlaskConical, Dna, Activity, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, FlaskConical, Dna, Activity, CheckCircle2, ImageIcon, Upload, X } from "lucide-react";
 import { calculateScreeningRisk } from "@/lib/riskCalculation";
 
 const FAMILY_HISTORY_OPTIONS = [
