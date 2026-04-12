@@ -270,15 +270,16 @@ export function ScreeningForm() {
             <CardDescription>Select the type of diagnostic screening</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { value: "blood_test", icon: FlaskConical, label: "Blood Test", desc: "CBC, lipids, tumor markers, metabolic panel" },
                 { value: "genetic", icon: Dna, label: "Genetic Screening", desc: "BRCA, APOE4, Lynch syndrome, genetic variants" },
                 { value: "biomarker", icon: Activity, label: "Biomarker Panel", desc: "Troponin, CRP, TSH, hormones, vitamins" },
+                { value: "imaging", icon: ImageIcon, label: "Medical Imaging", desc: "X-Ray, MRI, CT Scan, Ultrasound analysis" },
               ].map((t) => (
                 <button
                   key={t.value}
-                  onClick={() => { setScreeningType(t.value); setTestResults({}); }}
+                  onClick={() => { setScreeningType(t.value); setTestResults({}); setImageFiles([]); }}
                   className={`rounded-xl border-2 p-4 text-left transition-all ${
                     screeningType === t.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
                   }`}
@@ -309,6 +310,62 @@ export function ScreeningForm() {
             <CardDescription>Enter available test values. Leave blank for unavailable tests.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {screeningType === "imaging" ? (
+              <div className="space-y-5">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Imaging Type</Label>
+                    <Select value={imagingType} onValueChange={setImagingType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {IMAGING_TYPES.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Body Region</Label>
+                    <Input
+                      value={bodyRegion}
+                      onChange={(e) => setBodyRegion(e.target.value)}
+                      placeholder="e.g. Chest, Brain, Abdomen"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Upload Medical Images (max 5)</Label>
+                  <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*,.dcm"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Click to upload X-Ray, MRI, CT scan images</p>
+                      <p className="text-xs text-muted-foreground mt-1">Supports JPEG, PNG, DICOM formats</p>
+                    </label>
+                  </div>
+                  {imageFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {imageFiles.map((file, i) => (
+                        <div key={i} className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm">
+                          <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                          <span className="truncate max-w-[150px]">{file.name}</span>
+                          <button onClick={() => removeImage(i)} className="text-muted-foreground hover:text-foreground">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {getFields().map((field) => (
                 <div key={field.key} className="space-y-1">
@@ -335,6 +392,7 @@ export function ScreeningForm() {
                 </div>
               ))}
             </div>
+            )}
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(2)}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back
