@@ -59,6 +59,14 @@ const BIOMARKER_FIELDS = [
   { key: "afp", label: "AFP (ng/mL)", ref: "<10" },
 ];
 
+const IMAGING_TYPES = [
+  { value: "xray", label: "X-Ray" },
+  { value: "mri", label: "MRI" },
+  { value: "ct_scan", label: "CT Scan" },
+  { value: "ultrasound", label: "Ultrasound" },
+  { value: "mammogram", label: "Mammogram" },
+];
+
 type Step = 1 | 2 | 3 | 4;
 
 export function ScreeningForm() {
@@ -78,6 +86,11 @@ export function ScreeningForm() {
 
   // Step 3: Test Results
   const [testResults, setTestResults] = useState<Record<string, string>>({});
+
+  // Imaging
+  const [imagingType, setImagingType] = useState("xray");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [bodyRegion, setBodyRegion] = useState("");
 
   // Step 4: Notes
   const [clinicalNotes, setClinicalNotes] = useState("");
