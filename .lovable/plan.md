@@ -1,95 +1,45 @@
+# Fixes Needed to Complete the Three Goals
 
+After reviewing the code and database, the scaffolding is in place but three real gaps prevent the features from actually working end‑to‑end.
 
-# MedPulse Evolution: Early Disease Detection & Diagnostics Platform
+## Gap 1 — Doctor Screening Intelligence is empty
 
-## Vision
+**Why:** `health_screenings` currently has **0 rows**. The tab renders correctly but there is nothing to show, so "verification" can't be done.
 
-Transform MedPulse from a community symptom reporting tool into a comprehensive **early disease detection platform** that combines blood test analysis, genetic screening, and biomarker tracking to detect diseases like cancer and heart conditions years before symptoms appear — while retaining the existing outbreak surveillance capabilities.
+**Fix:**
+- Seed 3–5 demo screenings (mix of blood test, genetic, biomarker, imaging) with realistic values and run `analyze-screening` against them so the dashboard, top‑disease list, and risk badges populate.
+- Add an empty‑state CTA on the Screening Intelligence tab linking to `/submit-screening` so doctors aren't stuck on a blank panel.
 
-## What Changes
+## Gap 2 — Patient Health Timeline can't group readings per patient
 
-### 1. Landing Page Overhaul
-- Rewrite hero section: new headline emphasizing "Detect Disease Years Before Symptoms"
-- Update "How It Works" to a 4-step pipeline: **Sample Collection → Blood & Genetic Analysis → AI Biomarker Detection → Early Intervention**
-- New "Capabilities" section showcasing: Blood Test Analysis, Genetic Screening, Biomarker Tracking, Outbreak Surveillance
-- Updated trust indicators and mission/about text
+**Why:** `health_screenings` has no `patient_identifier` column. Today every submission is a brand‑new anonymous record (age + sex only), so `PatientHealthTimeline` cannot link multiple screenings of the same person — the chart will look correct for one screening but never form a true trend.
 
-### 2. New Database Tables (via migrations)
-- **`health_screenings`** — stores patient screening submissions (patient demographics, screening type: blood_test / genetic / biomarker, test results as JSONB, risk scores, AI analysis results, linked to submitter)
-- **`biomarker_profiles`** — tracks individual biomarker readings over time (biomarker name, value, unit, reference range, trend direction, linked to screening)
-- **`disease_risk_assessments`** — AI-generated risk profiles per screening (disease name, risk percentage, confidence, time horizon e.g. "5 years", recommended actions)
+**Fix:**
+- Add `patient_identifier text` (and optional `patient_name`) to `health_screenings` via migration; index it.
+- Add a "Patient ID / MRN" field to step 1 of `ScreeningForm`.
+- Update `PatientHealthTimeline` to group by `patient_identifier` and offer a patient selector dropdown, so the chart shows the same biomarker across that patient's screenings over time.
 
-### 3. Screening Submission Form (new page `/submit-screening`)
-- Multi-step form for doctors/volunteers to submit diagnostic data:
-  - **Patient Info**: age, sex, family history checkboxes (cancer, heart disease, diabetes, etc.)
-  - **Screening Type**: blood test, genetic screening, or biomarker panel
-  - **Test Results**: dynamic fields based on type — e.g. blood test shows CBC values, lipid panel, tumor markers; genetic shows gene variants; biomarker shows PSA, troponin, HbA1c, etc.
-  - **Clinical Notes**: free text
-- On submit: saves to `health_screenings`, triggers AI analysis via edge function
+## Gap 3 — Imaging uploads are stored but never analyzed by AI
 
-### 4. AI Analysis Edge Function (`analyze-screening`)
-- Receives screening data (patient info, test type, results, biomarkers)
-- Uses Lovable AI to generate structured output:
-  - Disease risk assessments (cancer risk %, heart disease risk %, diabetes risk %, etc.)
-  - Confidence scores and time horizons
-  - Recommended follow-up actions
-  - Biomarker trend analysis
-- Saves results to `disease_risk_assessments` table
+**Why:** `ScreeningForm` uploads files to the `medical-images` bucket and saves their paths in `test_results.uploaded_images`, but `supabase/functions/analyze-screening/index.ts` only sends a text prompt to `google/gemini-2.5-flash`. Images are ignored, so doctors get no visual diagnosis.
 
-### 5. Doctor Dashboard Enhancements
-- New **"Screening Intelligence"** tab alongside existing outbreak monitoring
-- Patient risk matrix: heatmap of patients by disease risk level
-- Biomarker trend charts: track individual biomarkers over time
-- AI risk assessment cards showing top disease risks with confidence bars
-- Screening pipeline: pending → analyzed → reviewed → actioned
+**Fix:**
+- In `analyze-screening`, when `screening_type === "imaging"`:
+  - Generate short‑lived signed URLs for each uploaded image from the `medical-images` bucket (bucket is private).
+  - Switch to a vision‑capable model (`google/gemini-2.5-pro`) and send each image as an `image_url` content part alongside the existing prompt, asking it to describe findings (nodules, fractures, opacities, etc.) before producing the structured `submit_risk_assessments` tool call.
+  - Persist the AI's textual imaging findings on the screening (new `imaging_findings text` column) so `ScreeningResults` and the Screening Intelligence detail view can display them.
+- Show the imaging findings + thumbnail signed URLs in `ScreeningResults.tsx` for the doctor view.
 
-### 6. Volunteer Dashboard Enhancements
-- New **"My Screenings"** section showing submitted screening results
-- Personal health risk summary with AI-generated insights
-- Biomarker history timeline
-- Keep existing community reporting features
+## Files to touch
 
-### 7. Enhanced Risk Calculation (`riskCalculation.ts`)
-- Add `calculateScreeningRisk()` function that factors in:
-  - Age, sex, family history
-  - Biomarker values vs. reference ranges
-  - Number of abnormal markers
-  - Screening type weighting
-- Provides preliminary risk before AI analysis runs
+- `supabase/migrations/<new>.sql` — add `patient_identifier`, `patient_name`, `imaging_findings` columns + index
+- `src/components/screening/ScreeningForm.tsx` — patient ID input
+- `src/components/screening/ScreeningResults.tsx` — render imaging findings + previews
+- `src/components/dashboard/PatientHealthTimeline.tsx` — group/select by patient
+- `src/components/dashboard/ScreeningIntelligence.tsx` — empty‑state CTA
+- `supabase/functions/analyze-screening/index.ts` — vision model + signed URLs + save findings
+- (one‑time) seed sample screenings for QA
 
-### 8. Admin Dashboard Updates
-- System-wide screening analytics (total screenings, risk distribution)
-- Disease detection statistics (cancers flagged, cardiac risks identified)
-- Screening vs. observation comparison metrics
+## Out of scope
 
-## Technical Details
-
-**New files to create:**
-- `src/pages/SubmitScreening.tsx` — screening submission page
-- `src/components/screening/ScreeningForm.tsx` — multi-step form
-- `src/components/screening/ScreeningResults.tsx` — results display
-- `src/components/dashboard/ScreeningIntelligence.tsx` — doctor screening tab
-- `src/components/dashboard/BiomarkerChart.tsx` — biomarker trend visualization
-- `supabase/functions/analyze-screening/index.ts` — AI analysis edge function
-
-**Files to modify:**
-- `src/pages/Index.tsx` — updated landing sections
-- `src/components/landing/HeroSection.tsx` — new messaging
-- `src/components/landing/HowItWorks.tsx` — new pipeline steps
-- `src/components/landing/AboutSection.tsx` — updated mission
-- `src/components/landing/AudienceCards.tsx` — updated audience descriptions
-- `src/components/landing/CTABanner.tsx` — updated CTA
-- `src/components/dashboard/DoctorDashboard.tsx` — add screening tab
-- `src/components/dashboard/VolunteerDashboard.tsx` — add screenings section
-- `src/pages/AdminDashboard.tsx` — add screening analytics
-- `src/App.tsx` — add `/submit-screening` route
-- `src/components/AppLayout.tsx` — add screening nav link
-- `src/lib/riskCalculation.ts` — add screening risk logic
-
-**Database migrations:**
-- Create `health_screenings`, `biomarker_profiles`, `disease_risk_assessments` tables with RLS
-- Enable realtime on `health_screenings`
-
-**Edge function:**
-- `analyze-screening` using Lovable AI with structured tool-calling output for disease risk assessments
-
+- Auth/role changes, landing page, outbreak surveillance, admin settings — none of these block the three goals.
