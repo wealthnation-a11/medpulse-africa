@@ -147,7 +147,10 @@ export type Database = {
           created_at: string
           family_history: Json | null
           id: string
+          imaging_findings: string
           patient_age: number
+          patient_identifier: string
+          patient_name: string
           patient_sex: string
           screening_type: string
           status: string
@@ -161,7 +164,10 @@ export type Database = {
           created_at?: string
           family_history?: Json | null
           id?: string
+          imaging_findings?: string
           patient_age: number
+          patient_identifier?: string
+          patient_name?: string
           patient_sex?: string
           screening_type?: string
           status?: string
@@ -175,7 +181,10 @@ export type Database = {
           created_at?: string
           family_history?: Json | null
           id?: string
+          imaging_findings?: string
           patient_age?: number
+          patient_identifier?: string
+          patient_name?: string
           patient_sex?: string
           screening_type?: string
           status?: string
