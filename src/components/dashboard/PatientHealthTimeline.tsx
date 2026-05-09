@@ -41,16 +41,19 @@ const BIOMARKER_LABELS: Record<string, string> = {
 
 export function PatientHealthTimeline() {
   const [biomarkers, setBiomarkers] = useState<BiomarkerRecord[]>([]);
+  const [screenings, setScreenings] = useState<Array<{ id: string; patient_identifier: string; patient_name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBiomarker, setSelectedBiomarker] = useState<string>("all");
+  const [selectedPatient, setSelectedPatient] = useState<string>("all");
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase
-        .from("biomarker_profiles")
-        .select("*")
-        .order("created_at", { ascending: true });
-      if (data) setBiomarkers(data);
+      const [bio, scr] = await Promise.all([
+        supabase.from("biomarker_profiles").select("*").order("created_at", { ascending: true }),
+        supabase.from("health_screenings").select("id, patient_identifier, patient_name"),
+      ]);
+      if (bio.data) setBiomarkers(bio.data as any);
+      if (scr.data) setScreenings(scr.data as any);
       setLoading(false);
     };
     fetch();
@@ -75,9 +78,35 @@ export function PatientHealthTimeline() {
     );
   }
 
+  // Map screening_id -> patient identifier
+  const screeningToPatient: Record<string, string> = {};
+  const patientLabels: Record<string, string> = {};
+  screenings.forEach((s) => {
+    const pid = s.patient_identifier || "(unassigned)";
+    screeningToPatient[s.id] = pid;
+    patientLabels[pid] = s.patient_name ? `${pid} — ${s.patient_name}` : pid;
+  });
+  const patientOptions = Object.keys(patientLabels).sort();
+
+  // Filter by selected patient
+  const filteredBiomarkers = selectedPatient === "all"
+    ? biomarkers
+    : biomarkers.filter((b) => screeningToPatient[b.screening_id] === selectedPatient);
+
+  if (filteredBiomarkers.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No biomarker data for this patient yet.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Group by biomarker name
   const grouped: Record<string, BiomarkerRecord[]> = {};
-  biomarkers.forEach((b) => {
+  filteredBiomarkers.forEach((b) => {
     if (!grouped[b.biomarker_name]) grouped[b.biomarker_name] = [];
     grouped[b.biomarker_name].push(b);
   });
@@ -87,7 +116,7 @@ export function PatientHealthTimeline() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
@@ -95,6 +124,18 @@ export function PatientHealthTimeline() {
           </h3>
           <p className="text-sm text-muted-foreground">Track biomarker trends across multiple screenings</p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <Select value={selectedPatient} onValueChange={setSelectedPatient}>
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="Filter patient" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Patients</SelectItem>
+            {patientOptions.map((p) => (
+              <SelectItem key={p} value={p}>{patientLabels[p]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={selectedBiomarker} onValueChange={setSelectedBiomarker}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Filter biomarker" />
@@ -108,18 +149,19 @@ export function PatientHealthTimeline() {
             ))}
           </SelectContent>
         </Select>
+        </div>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard label="Biomarkers Tracked" value={biomarkerNames.length} />
-        <SummaryCard label="Total Readings" value={biomarkers.length} />
+        <SummaryCard label="Total Readings" value={filteredBiomarkers.length} />
         <SummaryCard
           label="Abnormal Values"
-          value={biomarkers.filter((b) => b.is_abnormal).length}
-          highlight={biomarkers.some((b) => b.is_abnormal)}
+          value={filteredBiomarkers.filter((b) => b.is_abnormal).length}
+          highlight={filteredBiomarkers.some((b) => b.is_abnormal)}
         />
-        <SummaryCard label="Screenings" value={new Set(biomarkers.map((b) => b.screening_id)).size} />
+        <SummaryCard label="Screenings" value={new Set(filteredBiomarkers.map((b) => b.screening_id)).size} />
       </div>
 
       {/* Charts */}

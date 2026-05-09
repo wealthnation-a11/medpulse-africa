@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, CheckCircle2, Clock, Brain, Activity, Shield } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Brain, Activity, Shield, Eye } from "lucide-react";
 
 interface RiskAssessment {
   id: string;
@@ -23,6 +25,9 @@ interface Screening {
   test_results: Record<string, any>;
   family_history: string[];
   clinical_notes: string;
+  imaging_findings?: string;
+  patient_identifier?: string;
+  patient_name?: string;
 }
 
 interface ScreeningResultsProps {
@@ -31,6 +36,23 @@ interface ScreeningResultsProps {
 }
 
 export function ScreeningResults({ screening, riskAssessments }: ScreeningResultsProps) {
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const paths: string[] = Array.isArray(screening.test_results?.image_paths)
+      ? screening.test_results.image_paths
+      : [];
+    if (screening.screening_type !== "imaging" || paths.length === 0) return;
+    (async () => {
+      const urls: string[] = [];
+      for (const p of paths) {
+        const { data } = await supabase.storage.from("medical-images").createSignedUrl(p, 600);
+        if (data?.signedUrl) urls.push(data.signedUrl);
+      }
+      setImageUrls(urls);
+    })();
+  }, [screening.id]);
+
   const getRiskColor = (pct: number) => {
     if (pct >= 60) return "text-[hsl(var(--risk-high))]";
     if (pct >= 30) return "text-[hsl(var(--risk-medium))]";
@@ -65,6 +87,38 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
           </div>
         </CardContent>
       </Card>
+
+      {/* Imaging findings */}
+      {screening.screening_type === "imaging" && (screening.imaging_findings || imageUrls.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              Imaging Findings
+            </CardTitle>
+            <CardDescription>
+              {(screening.test_results?.imaging_type ?? "Image").toString().toUpperCase()}
+              {screening.test_results?.body_region ? ` • ${screening.test_results.body_region}` : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {screening.imaging_findings ? (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{screening.imaging_findings}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">AI is reviewing the uploaded image(s)…</p>
+            )}
+            {imageUrls.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {imageUrls.map((u, i) => (
+                  <a key={i} href={u} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-border">
+                    <img src={u} alt={`Medical image ${i + 1}`} className="w-full h-32 object-cover" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Risk Assessments */}
       {riskAssessments.length > 0 ? (

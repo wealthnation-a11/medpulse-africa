@@ -30,6 +30,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "AI not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const isImaging = screening.screening_type === "imaging";
+    const imagePaths: string[] = Array.isArray(screening.test_results?.image_paths)
+      ? screening.test_results.image_paths
+      : [];
+
+    // For imaging screenings, generate signed URLs so the vision model can fetch the images.
+    const signedImageUrls: string[] = [];
+    if (isImaging && imagePaths.length > 0) {
+      for (const path of imagePaths) {
+        const { data: signed } = await supabase.storage
+          .from("medical-images")
+          .createSignedUrl(path, 60 * 10); // 10 minutes
+        if (signed?.signedUrl) signedImageUrls.push(signed.signedUrl);
+      }
+    }
+
     const prompt = `You are an expert medical AI analyzing diagnostic screening data for early disease detection. Analyze the following patient data and provide disease risk assessments.
 
 Patient Information:
@@ -41,8 +57,61 @@ Patient Information:
 - Clinical Notes: ${screening.clinical_notes || "None"}
 
 Analyze the data and predict risks for relevant diseases including cancer types, heart disease, diabetes, kidney disease, liver disease, thyroid disorders, and any other conditions suggested by the data. For each disease, provide a risk percentage (0-100), confidence score (0-1), time horizon for potential onset, and recommended follow-up actions.
+${isImaging ? `\nThe attached medical image(s) are of type "${screening.test_results?.imaging_type ?? "unknown"}" of body region "${screening.test_results?.body_region ?? "unspecified"}". First describe visible findings (nodules, masses, fractures, opacities, asymmetries, etc.), then call the submit_imaging_findings tool with a concise findings summary, and finally call submit_risk_assessments. If both tools are needed, call submit_imaging_findings first.` : ""}
 
 IMPORTANT: Base your analysis on established medical reference ranges and risk factors. Be thorough but evidence-based.`;
+
+    const userContent: any[] = [{ type: "text", text: prompt }];
+    for (const url of signedImageUrls) {
+      userContent.push({ type: "image_url", image_url: { url } });
+    }
+
+    const tools: any[] = [
+      {
+        type: "function",
+        function: {
+          name: "submit_risk_assessments",
+          description: "Submit disease risk assessments based on screening analysis",
+          parameters: {
+            type: "object",
+            properties: {
+              assessments: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    disease_name: { type: "string" },
+                    risk_percentage: { type: "number" },
+                    confidence: { type: "number" },
+                    time_horizon: { type: "string" },
+                    recommended_actions: { type: "array", items: { type: "string" } },
+                  },
+                  required: ["disease_name", "risk_percentage", "confidence", "time_horizon", "recommended_actions"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["assessments"],
+            additionalProperties: false,
+          },
+        },
+      },
+    ];
+    if (isImaging) {
+      tools.push({
+        type: "function",
+        function: {
+          name: "submit_imaging_findings",
+          description: "Submit a concise textual summary of findings from the medical image(s)",
+          parameters: {
+            type: "object",
+            properties: { findings: { type: "string", description: "Plain-English summary of visible findings" } },
+            required: ["findings"],
+            additionalProperties: false,
+          },
+        },
+      });
+    }
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -51,47 +120,13 @@ IMPORTANT: Base your analysis on established medical reference ranges and risk f
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: isImaging ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "You are a medical AI specialist focused on early disease detection through blood tests, genetic screening, and biomarker analysis." },
-          { role: "user", content: prompt },
+          { role: "user", content: userContent },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "submit_risk_assessments",
-              description: "Submit disease risk assessments based on screening analysis",
-              parameters: {
-                type: "object",
-                properties: {
-                  assessments: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        disease_name: { type: "string", description: "Name of the disease" },
-                        risk_percentage: { type: "number", description: "Risk percentage 0-100" },
-                        confidence: { type: "number", description: "Confidence score 0-1" },
-                        time_horizon: { type: "string", description: "e.g. '2-5 years', '5-10 years'" },
-                        recommended_actions: {
-                          type: "array",
-                          items: { type: "string" },
-                          description: "List of recommended follow-up actions",
-                        },
-                      },
-                      required: ["disease_name", "risk_percentage", "confidence", "time_horizon", "recommended_actions"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["assessments"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "submit_risk_assessments" } },
+        tools,
+        tool_choice: "auto",
       }),
     });
 
@@ -102,13 +137,19 @@ IMPORTANT: Base your analysis on established medical reference ranges and risk f
     }
 
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
+    const toolCalls: any[] = aiData.choices?.[0]?.message?.tool_calls || [];
+    const riskCall = toolCalls.find((c) => c.function?.name === "submit_risk_assessments");
+    const findingsCall = toolCalls.find((c) => c.function?.name === "submit_imaging_findings");
+    if (!riskCall) {
       console.error("No tool call in response");
       return new Response(JSON.stringify({ error: "AI returned no structured data" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { assessments } = JSON.parse(toolCall.function.arguments);
+    const { assessments } = JSON.parse(riskCall.function.arguments);
+    let imagingFindings = "";
+    if (findingsCall) {
+      try { imagingFindings = JSON.parse(findingsCall.function.arguments)?.findings || ""; } catch { /* ignore */ }
+    }
 
     // Save risk assessments
     const inserts = assessments.map((a: any) => ({
@@ -165,7 +206,11 @@ IMPORTANT: Base your analysis on established medical reference ranges and risk f
     }
 
     // Mark screening as analyzed
-    await supabase.from("health_screenings").update({ ai_analysis_complete: true, status: "analyzed" }).eq("id", screening_id);
+    await supabase.from("health_screenings").update({
+      ai_analysis_complete: true,
+      status: "analyzed",
+      ...(imagingFindings ? { imaging_findings: imagingFindings } : {}),
+    }).eq("id", screening_id);
 
     return new Response(JSON.stringify({ success: true, assessments_count: inserts.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

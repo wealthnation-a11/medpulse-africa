@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -147,7 +148,13 @@ export function ScreeningIntelligence() {
         </CardHeader>
         <CardContent>
           {screenings.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No screenings submitted yet</p>
+            <div className="py-8 text-center space-y-3">
+              <FlaskConical className="h-8 w-8 text-muted-foreground mx-auto" />
+              <p className="text-sm text-muted-foreground">No screenings submitted yet</p>
+              <Button asChild size="sm">
+                <Link to="/submit-screening">Submit a screening</Link>
+              </Button>
+            </div>
           ) : (
             <div className="space-y-2">
               {screenings.slice(0, 10).map((s) => {

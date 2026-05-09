@@ -80,6 +80,8 @@ export function ScreeningForm() {
   const [patientAge, setPatientAge] = useState("");
   const [patientSex, setPatientSex] = useState("male");
   const [familyHistory, setFamilyHistory] = useState<string[]>([]);
+  const [patientIdentifier, setPatientIdentifier] = useState("");
+  const [patientName, setPatientName] = useState("");
 
   // Step 2: Screening Type
   const [screeningType, setScreeningType] = useState("blood_test");
@@ -169,6 +171,8 @@ export function ScreeningForm() {
         test_results: { ...filteredResults, preliminary_risk: preliminaryRisk },
         clinical_notes: clinicalNotes,
         status: "pending",
+        patient_identifier: patientIdentifier.trim(),
+        patient_name: patientName.trim(),
       }).select().single();
 
       if (error) throw error;
@@ -227,6 +231,22 @@ export function ScreeningForm() {
           <CardContent className="space-y-5">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label>Patient ID / MRN *</Label>
+                <Input
+                  value={patientIdentifier}
+                  onChange={(e) => setPatientIdentifier(e.target.value)}
+                  placeholder="e.g. MRN-00123"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Patient Name (optional)</Label>
+                <Input
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                  placeholder="e.g. Jane Doe"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Age</Label>
                 <Input type="number" min="0" max="150" value={patientAge} onChange={(e) => setPatientAge(e.target.value)} placeholder="e.g. 45" />
               </div>
@@ -254,7 +274,7 @@ export function ScreeningForm() {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button onClick={() => setStep(2)} disabled={!patientAge}>
+              <Button onClick={() => setStep(2)} disabled={!patientAge || !patientIdentifier.trim()}>
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
