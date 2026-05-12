@@ -10,6 +10,8 @@ import { ObservationFilters, applyFilters, INITIAL_FILTERS, type FilterState } f
 import { OutbreakPrediction } from "./OutbreakPrediction";
 import { ScreeningIntelligence } from "./ScreeningIntelligence";
 import { PatientHealthTimeline } from "./PatientHealthTimeline";
+import { SignOffQueue } from "./SignOffQueue";
+import { PatientsList } from "./PatientsList";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -27,6 +29,7 @@ import {
   Zap,
   HeartPulse,
   FlaskConical,
+  Users,
 } from "lucide-react";
 import { format } from "date-fns";
 import { getRiskBadgeClasses } from "@/lib/riskCalculation";
@@ -149,14 +152,24 @@ export function DoctorDashboard({
 
       {/* Tabs for Screening Intelligence vs Outbreak Surveillance */}
       <Tabs defaultValue="screening" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="screening" className="flex items-center gap-2"><FlaskConical className="h-4 w-4" />Screening Intelligence</TabsTrigger>
+          <TabsTrigger value="signoff" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Sign-Off Queue</TabsTrigger>
+          <TabsTrigger value="patients" className="flex items-center gap-2"><Users className="h-4 w-4" />Patients</TabsTrigger>
           <TabsTrigger value="timeline" className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Health Timeline</TabsTrigger>
           <TabsTrigger value="surveillance" className="flex items-center gap-2"><Activity className="h-4 w-4" />Outbreak Surveillance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="screening">
           <ScreeningIntelligence />
+        </TabsContent>
+
+        <TabsContent value="signoff">
+          <SignOffQueue />
+        </TabsContent>
+
+        <TabsContent value="patients">
+          <PatientsList />
         </TabsContent>
 
         <TabsContent value="timeline">

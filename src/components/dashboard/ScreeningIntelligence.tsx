@@ -189,6 +189,11 @@ export function ScreeningIntelligence() {
                   </button>
                 );
               })}
+              {screenings.some((s) => s.patient_identifier) && (
+                <p className="text-xs text-muted-foreground text-center pt-2">
+                  Tip: open a patient's full timeline from the <Link to="/dashboard" className="underline">Patients</Link> tab.
+                </p>
+              )}
             </div>
           )}
         </CardContent>

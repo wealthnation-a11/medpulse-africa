@@ -14,6 +14,7 @@ import SubmitObservation from "./pages/SubmitObservation";
 import SubmitScreening from "./pages/SubmitScreening";
 import DoctorValidations from "./pages/DoctorValidations";
 import MySubmissionsPage from "./pages/MySubmissions";
+import PatientProfile from "./pages/PatientProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={["volunteer", "doctor"]}>
                   <MySubmissionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patient/:id"
+              element={
+                <ProtectedRoute requiredRole={["doctor", "admin"]}>
+                  <PatientProfile />
                 </ProtectedRoute>
               }
             />
