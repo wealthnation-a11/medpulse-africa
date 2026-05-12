@@ -24,6 +24,8 @@ interface Screening {
   status: string;
   ai_analysis_complete: boolean;
   created_at: string;
+  patient_identifier?: string;
+  patient_name?: string;
 }
 
 interface RiskAssessment {
