@@ -1,45 +1,117 @@
-# Fixes Needed to Complete the Three Goals
+# Close the Clinical Loop: 4-Feature Build
 
-After reviewing the code and database, the scaffolding is in place but three real gaps prevent the features from actually working end‑to‑end.
+Bundle covering screening notifications + sign-off, patient profile, PDF reports, and trend-based risk deltas.
 
-## Gap 1 — Doctor Screening Intelligence is empty
+---
 
-**Why:** `health_screenings` currently has **0 rows**. The tab renders correctly but there is nothing to show, so "verification" can't be done.
+## 1. Screening notifications + doctor sign-off
 
-**Fix:**
-- Seed 3–5 demo screenings (mix of blood test, genetic, biomarker, imaging) with realistic values and run `analyze-screening` against them so the dashboard, top‑disease list, and risk badges populate.
-- Add an empty‑state CTA on the Screening Intelligence tab linking to `/submit-screening` so doctors aren't stuck on a blank panel.
+**Goal:** When a screening is analyzed and flagged high-risk, doctors get notified and can formally sign off, validate, or override the AI's assessment.
 
-## Gap 2 — Patient Health Timeline can't group readings per patient
+**Database**
+- New table `screening_validations` (mirrors `doctor_validations` but for screenings):
+  - `screening_id`, `doctor_id`, `validation_status` (pending/confirmed/revised/dismissed), `corrected_risk_level`, `doctor_notes`, `signed_off_at`
+- Postgres trigger on `disease_risk_assessments` insert: when any assessment ≥ high-risk threshold (from `platform_settings`), insert a notification row for every user with the `doctor` role.
+- Add `severity` ('low'|'medium'|'high') and a `category` ('screening'|'observation') column to `notifications` for filtering.
 
-**Why:** `health_screenings` has no `patient_identifier` column. Today every submission is a brand‑new anonymous record (age + sex only), so `PatientHealthTimeline` cannot link multiple screenings of the same person — the chart will look correct for one screening but never form a true trend.
+**Backend**
+- Update `analyze-screening` so after assessments are saved it does NOT need to push notifications manually — the trigger handles it.
 
-**Fix:**
-- Add `patient_identifier text` (and optional `patient_name`) to `health_screenings` via migration; index it.
-- Add a "Patient ID / MRN" field to step 1 of `ScreeningForm`.
-- Update `PatientHealthTimeline` to group by `patient_identifier` and offer a patient selector dropdown, so the chart shows the same biomarker across that patient's screenings over time.
+**UI**
+- Doctor dashboard → new **"Sign-Off Queue"** tab listing screenings where AI flagged high risk and `screening_validations` has no entry yet.
+- Sign-off panel: show AI assessment + biomarkers + imaging findings; doctor selects Confirm / Revise risk / Dismiss + free-text notes → writes to `screening_validations`, also flips screening status to `validated`.
+- `NotificationBell` already exists — extend it to render screening notifications and deep-link to the sign-off panel.
 
-## Gap 3 — Imaging uploads are stored but never analyzed by AI
+---
 
-**Why:** `ScreeningForm` uploads files to the `medical-images` bucket and saves their paths in `test_results.uploaded_images`, but `supabase/functions/analyze-screening/index.ts` only sends a text prompt to `google/gemini-2.5-flash`. Images are ignored, so doctors get no visual diagnosis.
+## 2. Patient profile page
 
-**Fix:**
-- In `analyze-screening`, when `screening_type === "imaging"`:
-  - Generate short‑lived signed URLs for each uploaded image from the `medical-images` bucket (bucket is private).
-  - Switch to a vision‑capable model (`google/gemini-2.5-pro`) and send each image as an `image_url` content part alongside the existing prompt, asking it to describe findings (nodules, fractures, opacities, etc.) before producing the structured `submit_risk_assessments` tool call.
-  - Persist the AI's textual imaging findings on the screening (new `imaging_findings text` column) so `ScreeningResults` and the Screening Intelligence detail view can display them.
-- Show the imaging findings + thumbnail signed URLs in `ScreeningResults.tsx` for the doctor view.
+**Goal:** One URL per patient (`/patient/:patientIdentifier`) consolidating everything about them.
 
-## Files to touch
+**Route & layout** — new page `src/pages/PatientProfile.tsx` with sections:
+1. **Header card** — patient ID, name, age, sex, latest screening date, current overall risk badge.
+2. **Risk overview** — top 3 disease risks (latest values) as colored cards.
+3. **Screenings timeline** — chronological list, click to open the existing `ScreeningResults` view inline.
+4. **Biomarker trends** — reuse `PatientHealthTimeline` filtered to this patient, plus the new trend-delta indicators (see #4).
+5. **Imaging gallery** — thumbnails with signed URLs from `medical-images`, click to open full-size + AI findings.
+6. **Doctor sign-offs** — list of `screening_validations` for this patient.
+7. **Action bar** — "Generate PDF report" + "Submit new screening for this patient" buttons.
 
-- `supabase/migrations/<new>.sql` — add `patient_identifier`, `patient_name`, `imaging_findings` columns + index
-- `src/components/screening/ScreeningForm.tsx` — patient ID input
-- `src/components/screening/ScreeningResults.tsx` — render imaging findings + previews
-- `src/components/dashboard/PatientHealthTimeline.tsx` — group/select by patient
-- `src/components/dashboard/ScreeningIntelligence.tsx` — empty‑state CTA
-- `supabase/functions/analyze-screening/index.ts` — vision model + signed URLs + save findings
-- (one‑time) seed sample screenings for QA
+**Discoverability**
+- Doctor dashboard → new **"Patients"** tab: searchable list of distinct `patient_identifier` values with last-screening date and current top risk.
+- `ScreeningIntelligence` recent-screenings rows link to the patient profile (in addition to the current detail view).
 
-## Out of scope
+---
 
-- Auth/role changes, landing page, outbreak surveillance, admin settings — none of these block the three goals.
+## 3. PDF report generator
+
+**Goal:** One-click downloadable patient report.
+
+**Approach** — client-side using `jspdf` + `jspdf-autotable` (no edge function, no extra secrets).
+
+**Report contents**
+- Header: MedPulse logo, patient demographics, report date, generating clinician.
+- Executive summary: latest overall risk level + sign-off status.
+- Disease risk table: disease, risk %, confidence, time horizon, recommended actions.
+- Biomarker trend section: per-marker latest value, reference range, abnormal flag, mini sparkline rendered to canvas via `recharts`-to-image OR drawn directly with jsPDF lines.
+- Imaging findings: thumbnails (fetched as base64 from signed URLs) + AI textual findings.
+- Doctor notes from sign-offs.
+- Footer disclaimer: "AI-assisted analysis, not a diagnosis."
+
+**Where**
+- "Generate PDF report" button on Patient Profile page and on individual `ScreeningResults` view.
+
+---
+
+## 4. Trend-based risk deltas
+
+**Goal:** Detect when a biomarker is *trending* toward abnormal even while still in range — the actual early-detection signal.
+
+**Logic** (new `src/lib/trendAnalysis.ts`)
+- For each biomarker with ≥ 2 readings for the same `patient_identifier`:
+  - Compute slope (value change per 30 days) using simple linear regression.
+  - Project value 6 / 12 / 24 months out.
+  - Classify trend as: `stable`, `improving`, `concerning` (heading out of range within 12 months), or `critical` (already abnormal AND worsening).
+- Disease-specific velocity rules (from medical literature):
+  - PSA velocity > 0.75 ng/mL/year → elevated prostate cancer risk
+  - HbA1c rising > 0.3%/year → pre-diabetic trajectory
+  - LDL rising > 10 mg/dL/year → cardiovascular trajectory
+  - Creatinine rising > 0.2 mg/dL/year → kidney decline
+- Output per patient: array of `TrendInsight { biomarker, currentValue, slope, projectedValue, monthsToAbnormal, severity, suggestedDisease }`.
+
+**UI surfaces**
+- New `TrendInsightsPanel` component on Patient Profile + Doctor dashboard "Insights" tab.
+- Color-coded badges (green stable, amber concerning, red critical) with plain-English explanation: *"LDL rising 12 mg/dL/yr — cardiovascular risk trajectory; recommend lipid panel in 3 months."*
+- Annotate `PatientHealthTimeline` charts with trend arrows + projected dotted-line extension.
+
+---
+
+## Technical Notes
+
+**Files to create**
+- `supabase/migrations/<new>.sql` — `screening_validations` table + RLS, `notifications` columns, high-risk trigger function
+- `src/pages/PatientProfile.tsx`
+- `src/components/dashboard/SignOffQueue.tsx`
+- `src/components/dashboard/PatientsList.tsx`
+- `src/components/patient/PatientHeader.tsx`
+- `src/components/patient/ImagingGallery.tsx`
+- `src/components/patient/TrendInsightsPanel.tsx`
+- `src/components/patient/SignOffPanel.tsx`
+- `src/lib/trendAnalysis.ts`
+- `src/lib/pdfReport.ts` (jsPDF generator)
+
+**Files to edit**
+- `src/App.tsx` — add `/patient/:id` route
+- `src/components/dashboard/DoctorDashboard.tsx` — add Sign-Off, Patients, Insights tabs
+- `src/components/dashboard/ScreeningIntelligence.tsx` — link to patient profile
+- `src/components/dashboard/PatientHealthTimeline.tsx` — overlay projected trend lines
+- `src/components/screening/ScreeningResults.tsx` — add "Generate PDF" + "View patient profile" buttons
+- `src/components/NotificationBell.tsx` — handle screening notifications
+
+**Dependencies**
+- `jspdf`, `jspdf-autotable` (PDF generation)
+
+**Out of scope**
+- Patient-facing portal (separate role — flagged as future work)
+- Email/SMS notification delivery (in-app only for now)
+- DICOM imaging support
