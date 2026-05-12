@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -20,10 +21,13 @@ interface Notification {
   is_read: boolean;
   related_id: string | null;
   created_at: string;
+  category?: string;
+  severity?: string;
 }
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -73,9 +77,21 @@ export function NotificationBell() {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case "warning":
       case "high_risk": return <AlertTriangle className="h-4 w-4 text-[hsl(var(--risk-high))]" />;
       case "outbreak": return <Activity className="h-4 w-4 text-accent" />;
       default: return <Info className="h-4 w-4 text-primary" />;
+    }
+  };
+
+  const handleClick = async (n: Notification) => {
+    if (!n.is_read) await markAsRead(n.id);
+    if (n.category === "screening" && n.related_id) {
+      const { data } = await supabase.from("health_screenings").select("patient_identifier").eq("id", n.related_id).maybeSingle();
+      if (data?.patient_identifier) {
+        setOpen(false);
+        navigate(`/patient/${encodeURIComponent(data.patient_identifier)}`);
+      }
     }
   };
 
@@ -110,7 +126,7 @@ export function NotificationBell() {
                 <div
                   key={n.id}
                   className={`px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}
-                  onClick={() => markAsRead(n.id)}
+                  onClick={() => handleClick(n)}
                 >
                   <div className="flex items-start gap-2.5">
                     <div className="mt-0.5 shrink-0">{getIcon(n.type)}</div>

@@ -24,6 +24,8 @@ interface Screening {
   status: string;
   ai_analysis_complete: boolean;
   created_at: string;
+  patient_identifier?: string;
+  patient_name?: string;
 }
 
 interface RiskAssessment {
@@ -189,6 +191,11 @@ export function ScreeningIntelligence() {
                   </button>
                 );
               })}
+              {screenings.some((s) => s.patient_identifier) && (
+                <p className="text-xs text-muted-foreground text-center pt-2">
+                  Tip: open a patient's full timeline from the <Link to="/dashboard" className="underline">Patients</Link> tab.
+                </p>
+              )}
             </div>
           )}
         </CardContent>

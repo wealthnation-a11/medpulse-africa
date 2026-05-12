@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, Clock, Brain, Activity, Shield, Eye } from "lucide-react";
 
 interface RiskAssessment {
@@ -70,7 +72,8 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
       {/* Status */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-between flex-wrap">
+            <div className="flex items-center gap-3">
             {screening.ai_analysis_complete ? (
               <CheckCircle2 className="h-5 w-5 text-[hsl(var(--risk-low))]" />
             ) : (
@@ -82,8 +85,15 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
               </p>
               <p className="text-xs text-muted-foreground">
                 {screening.screening_type.replace("_", " ")} • Patient: {screening.patient_age}yrs, {screening.patient_sex}
+                {screening.patient_name ? ` • ${screening.patient_name}` : ""}
               </p>
             </div>
+            </div>
+            {screening.patient_identifier && (
+              <Button size="sm" variant="outline" asChild>
+                <Link to={`/patient/${encodeURIComponent(screening.patient_identifier)}`}>View patient profile</Link>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
