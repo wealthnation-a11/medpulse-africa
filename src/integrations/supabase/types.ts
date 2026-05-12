@@ -196,31 +196,37 @@ export type Database = {
       }
       notifications: {
         Row: {
+          category: string
           created_at: string
           id: string
           is_read: boolean
           message: string
           related_id: string | null
+          severity: string
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           is_read?: boolean
           message: string
           related_id?: string | null
+          severity?: string
           title: string
           type?: string
           user_id: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           is_read?: boolean
           message?: string
           related_id?: string | null
+          severity?: string
           title?: string
           type?: string
           user_id?: string
@@ -353,6 +359,42 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      screening_validations: {
+        Row: {
+          corrected_risk_level: string | null
+          created_at: string
+          doctor_id: string
+          doctor_notes: string
+          id: string
+          screening_id: string
+          signed_off_at: string | null
+          updated_at: string
+          validation_status: string
+        }
+        Insert: {
+          corrected_risk_level?: string | null
+          created_at?: string
+          doctor_id: string
+          doctor_notes?: string
+          id?: string
+          screening_id: string
+          signed_off_at?: string | null
+          updated_at?: string
+          validation_status?: string
+        }
+        Update: {
+          corrected_risk_level?: string | null
+          created_at?: string
+          doctor_id?: string
+          doctor_notes?: string
+          id?: string
+          screening_id?: string
+          signed_off_at?: string | null
+          updated_at?: string
+          validation_status?: string
         }
         Relationships: []
       }
