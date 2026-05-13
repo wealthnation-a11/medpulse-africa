@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "volunteer" | "doctor" | "admin";
+type AppRole = "volunteer" | "doctor" | "admin" | "patient";
 
 interface AuthContextType {
   user: User | null;
@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   roles: AppRole[];
   displayName: string;
-  signUp: (email: string, password: string, displayName: string, role: AppRole) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, displayName: string, role: AppRole, patientIdentifier?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name: string, role: AppRole) => {
+  const signUp = async (email: string, password: string, name: string, role: AppRole, patientIdentifier?: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -87,6 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user_id: data.user.id,
         role,
       });
+      // For patients, store the patient identifier on profile so screenings can be linked
+      if (role === "patient" && patientIdentifier) {
+        await supabase.from("profiles").update({ patient_identifier: patientIdentifier }).eq("user_id", data.user.id);
+      }
       // Immediately fetch roles so navigation renders correctly
       await fetchUserData(data.user.id);
     }

@@ -8,6 +8,9 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import DoctorDashboardPage from "./pages/DoctorDashboardPage";
+import VolunteerDashboardPage from "./pages/VolunteerDashboardPage";
+import PatientDashboardPage from "./pages/PatientDashboardPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSettings from "./pages/AdminSettings";
 import SubmitObservation from "./pages/SubmitObservation";
@@ -34,6 +37,30 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/doctor"
+              element={
+                <ProtectedRoute requiredRole="doctor">
+                  <DoctorDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/volunteer"
+              element={
+                <ProtectedRoute requiredRole="volunteer">
+                  <VolunteerDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/patient"
+              element={
+                <ProtectedRoute requiredRole="patient">
+                  <PatientDashboardPage />
                 </ProtectedRoute>
               }
             />
