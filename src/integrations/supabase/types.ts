@@ -341,6 +341,7 @@ export type Database = {
           default_location: string | null
           display_name: string
           id: string
+          patient_identifier: string | null
           updated_at: string
           user_id: string
         }
@@ -349,6 +350,7 @@ export type Database = {
           default_location?: string | null
           display_name?: string
           id?: string
+          patient_identifier?: string | null
           updated_at?: string
           user_id: string
         }
@@ -357,6 +359,7 @@ export type Database = {
           default_location?: string | null
           display_name?: string
           id?: string
+          patient_identifier?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -424,6 +427,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_patient_identifier: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -433,6 +437,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_doctor: { Args: never; Returns: boolean }
+      is_patient: { Args: never; Returns: boolean }
       is_volunteer: { Args: never; Returns: boolean }
     }
     Enums: {
