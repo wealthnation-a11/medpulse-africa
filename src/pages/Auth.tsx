@@ -5,21 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, ArrowLeft, Loader2, Stethoscope, HeartHandshake } from "lucide-react";
+import { Activity, ArrowLeft, Loader2, Stethoscope, HeartHandshake, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Mode = "login" | "signup";
-type SelectedRole = "volunteer" | "doctor";
+type SelectedRole = "volunteer" | "doctor" | "patient";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const defaultRole = searchParams.get("role") === "doctor" ? "doctor" : "volunteer";
+  const roleParam = searchParams.get("role");
+  const defaultRole: SelectedRole =
+    roleParam === "doctor" ? "doctor" : roleParam === "patient" ? "patient" : "volunteer";
 
   const [mode, setMode] = useState<Mode>("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<SelectedRole>(defaultRole);
+  const [patientIdentifier, setPatientIdentifier] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const { signUp, signIn } = useAuth();
@@ -32,7 +35,7 @@ export default function Auth() {
 
     try {
       if (mode === "signup") {
-        const { error } = await signUp(email, password, displayName, role);
+        const { error } = await signUp(email, password, displayName, role, patientIdentifier);
         if (error) {
           toast({ title: "Signup failed", description: error.message, variant: "destructive" });
         } else {
@@ -87,36 +90,45 @@ export default function Auth() {
               {/* Role selection — always visible */}
               <div className="space-y-2">
                 <Label>{mode === "signup" ? "I want to join as" : "I am signing in as"}</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setRole("volunteer")}
-                    className={`rounded-lg border-2 p-4 text-center transition-all ${
+                    className={`rounded-lg border-2 p-3 text-center transition-all ${
                       role === "volunteer"
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "border-border hover:border-primary/40"
                     }`}
                   >
-                    <HeartHandshake className={`h-7 w-7 mx-auto mb-2 ${role === "volunteer" ? "text-primary" : "text-muted-foreground"}`} />
+                    <HeartHandshake className={`h-6 w-6 mx-auto mb-1.5 ${role === "volunteer" ? "text-primary" : "text-muted-foreground"}`} />
                     <div className="font-semibold text-sm">Volunteer</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {mode === "signup" ? "Report health observations" : "Community reporter"}
-                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">Reporter</div>
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole("doctor")}
-                    className={`rounded-lg border-2 p-4 text-center transition-all ${
+                    className={`rounded-lg border-2 p-3 text-center transition-all ${
                       role === "doctor"
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "border-border hover:border-primary/40"
                     }`}
                   >
-                    <Stethoscope className={`h-7 w-7 mx-auto mb-2 ${role === "doctor" ? "text-primary" : "text-muted-foreground"}`} />
+                    <Stethoscope className={`h-6 w-6 mx-auto mb-1.5 ${role === "doctor" ? "text-primary" : "text-muted-foreground"}`} />
                     <div className="font-semibold text-sm">Doctor</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {mode === "signup" ? "Validate & review reports" : "Clinical professional"}
-                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">Clinical</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("patient")}
+                    className={`rounded-lg border-2 p-3 text-center transition-all ${
+                      role === "patient"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <User className={`h-6 w-6 mx-auto mb-1.5 ${role === "patient" ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="font-semibold text-sm">Patient</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">My health</div>
                   </button>
                 </div>
               </div>
@@ -131,6 +143,21 @@ export default function Auth() {
                     onChange={(e) => setDisplayName(e.target.value)}
                     required
                   />
+                </div>
+              )}
+
+              {mode === "signup" && role === "patient" && (
+                <div className="space-y-2">
+                  <Label htmlFor="mrn">Medical Record Number (optional)</Label>
+                  <Input
+                    id="mrn"
+                    placeholder="e.g. MRN-00123"
+                    value={patientIdentifier}
+                    onChange={(e) => setPatientIdentifier(e.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Link your account to existing screenings entered by your clinician.
+                  </p>
                 </div>
               )}
 
