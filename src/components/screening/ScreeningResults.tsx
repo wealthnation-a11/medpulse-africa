@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, Clock, Brain, Activity, Shield, Eye } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import { format } from "date-fns";
 
 interface RiskAssessment {
   id: string;
@@ -39,6 +41,21 @@ interface ScreeningResultsProps {
 
 export function ScreeningResults({ screening, riskAssessments }: ScreeningResultsProps) {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [validation, setValidation] = useState<any | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("screening_validations")
+        .select("*")
+        .eq("screening_id", screening.id)
+        .not("signed_off_at", "is", null)
+        .order("signed_off_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setValidation(data || null);
+    })();
+  }, [screening.id]);
 
   useEffect(() => {
     const paths: string[] = Array.isArray(screening.test_results?.image_paths)
@@ -69,6 +86,32 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
 
   return (
     <div className="space-y-4">
+      {/* Doctor-revised banner */}
+      {validation && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-sm">Doctor reviewed this screening</p>
+                  <Badge variant="secondary" className="capitalize">{validation.validation_status}</Badge>
+                  {validation.corrected_risk_level && validation.corrected_risk_level !== "none" && (
+                    <Badge className="bg-primary text-primary-foreground">Revised risk: {validation.corrected_risk_level}</Badge>
+                  )}
+                </div>
+                {validation.doctor_notes && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{validation.doctor_notes}</p>
+                )}
+                {validation.signed_off_at && (
+                  <p className="text-xs text-muted-foreground">Signed off {format(new Date(validation.signed_off_at), "PPp")}</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Status */}
       <Card>
         <CardContent className="pt-6">
