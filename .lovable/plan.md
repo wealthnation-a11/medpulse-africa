@@ -1,73 +1,67 @@
-# Three Distinct Dashboards
+# Close the loop: fix items #1–#7
 
-## Why the dashboards look the same today
+Items #3 (nav filtering) and #4 (smart redirect) are already correct in code (`AppLayout.tsx` scopes Submit/Validate to volunteer/doctor/admin; `Dashboard.tsx` routes admin → `/admin`, others → `/dashboard/{role}`). I'll re-verify but expect no changes. The other 5 need work.
 
-- `Volunteer` and `Doctor` dashboards are technically separate files, but they share the same hero layout pattern and tab style, so they feel similar at a glance.
-- There is **no Patient role** in the system at all (`app_role` enum is only `volunteer | doctor | admin`), and the auth screen only offers Volunteer/Doctor. Anything labeled "Login as patient" today routes through Volunteer.
-- Everyone lands on `/dashboard` which then branches by role inside one component — making the three experiences hard to differentiate visually and architecturally.
+## 1. Patient self-service PDF download
 
-## What I'll build
+In `PatientDashboard.tsx`:
+- Add a "Download my health report" button in the hero (next to MRN badge).
+- Handler fetches the patient's screenings, risks, biomarkers, and validations (already loaded in state or via a quick supabase query), builds a `PdfReportInput`, calls `generatePatientPdfReport`, then `downloadPdf(blob, 'my-health-report.pdf')`.
+- Reuses existing `src/lib/pdfReport.ts` — no new code path.
 
-### 1. Add `patient` role
-- Migration: extend `app_role` enum to include `'patient'`.
-- Update `Auth.tsx` role picker to show three cards: Volunteer / Doctor / Patient.
-- Update `useAuth`, `ProtectedRoute`, `AppLayout` nav filtering.
-- On signup, a patient row is auto-created in a new `patients` table (or reuses `health_screenings.patient_identifier`) tied to `auth.uid()` so their own data shows up.
+## 2. Patient "Book a screening" CTA
 
-### 2. Three dedicated routes (separate pages, separate URLs)
+In `PatientDashboard.tsx` hero:
+- Add a secondary button "Request a screening" that opens a small dialog with a textarea (reason / preferred date) and submits a row into `notifications` targeted at doctors (`type: 'info'`, `category: 'screening_request'`, `severity: 'low'`).
+- New helper inserts one notification per doctor (mirrors existing pattern in `notify_doctors_on_high_risk` but client-side). Patients already can't INSERT into `notifications` because of RLS — so this requires either:
+  - **Option A (chosen):** New RLS policy: allow patients to insert notifications where `category = 'screening_request'` and the recipient `user_id` belongs to a doctor.
+  - Migration adds that policy.
 
-```
-/dashboard/doctor      → DoctorDashboardPage
-/dashboard/volunteer   → VolunteerDashboardPage
-/dashboard/patient     → PatientDashboardPage
-/dashboard             → smart redirect based on role
-```
+## 3. AppLayout nav filtering (verify only)
 
-Each is a real `pages/` file (not just a sub-component), wrapped in `ProtectedRoute` with the right role.
+Already filters by role. Patient role gets only Dashboard. Confirm and move on.
 
-### 3. Page structures
+## 4. `/dashboard` smart redirect (verify only)
 
-**DoctorDashboardPage** (clinical command center — dark/clinical theme)
-- Header: "Clinical Intelligence Hub", pending case counter, quick actions (New Screening, Review Cases)
-- Tabs: Screening Intelligence · Sign-Off Queue · Patients · Health Timeline · Outbreak Surveillance
-- Metrics: high-risk pending, validation rate, geographic coverage
-- AI outbreak prediction + Africa heatmap
-- (Reuses existing `DoctorDashboard.tsx` content, moved into its own page)
+Already correct. Confirm and move on.
 
-**VolunteerDashboardPage** (community reporter — bright/friendly theme)
-- Header: "Community Health Reporter" with impact score, quick actions (Report Observation, Submit Screening)
-- Tabs: My Submissions · Community Reports
-- Metrics: reports filed, validated, regions covered, impact score
-- Recent submissions list with status dots
-- "How to increase your impact" tips card
-- No clinical review tools, no patient lists
+## 5. Doctor sign-off → patient notification
 
-**PatientDashboardPage** (personal health — calm/wellness theme) — NEW
-- Header: "My Health Hub" with personal greeting, next-action card
-- Tabs:
-  - **My Screenings** — list of own `health_screenings` with results and risk levels
-  - **My Health Timeline** — biomarker trend charts (BP, glucose, cholesterol, etc.) over time
-  - **My Risk Insights** — current disease risk assessments + plain-language explanations
-  - **My Imaging** — uploaded X-ray/MRI/CT scans with doctor notes
-  - **Notifications** — sign-offs and alerts from doctors
-- Metrics: screenings count, last checkup date, top risk, doctor sign-offs received
-- CTA: "Book a screening" / "Download my health report (PDF)"
-- Read-only — patients cannot review others or submit observations
+Add a Postgres trigger `notify_patient_on_signoff` on `screening_validations` AFTER INSERT/UPDATE when `signed_off_at IS NOT NULL`:
+- Look up the related screening's `patient_identifier`.
+- Find the patient user via `profiles.patient_identifier`.
+- Insert into `notifications` with `category='signoff'`, `severity` matching `corrected_risk_level` (or 'low' when confirmed/dismissed), title "Your screening was reviewed", message includes doctor decision summary, `related_id = screening_id`.
+- Skip if no matching patient profile.
 
-### 4. Smart redirect at `/dashboard`
-After login, look at role and `Navigate` to `/dashboard/{role}`. Admin still goes to `/admin`.
+## 6. Profile MRN edit
+
+- New page `src/pages/ProfileSettings.tsx` with form: `display_name`, `patient_identifier` (MRN), `default_location`.
+- Save via `supabase.from('profiles').update(...).eq('user_id', user.id)`.
+- Add a "Settings" link in `AppLayout` user menu (the small avatar block) → `/profile`. Show for all roles.
+- Route added to `App.tsx`.
+
+## 7. Sign-off feedback into displayed risk
+
+- In `ScreeningResults.tsx` (used by patient + doctor views): fetch the latest `screening_validations` row for the screening.
+- If `corrected_risk_level` is present, render a "Doctor-revised risk: {level}" banner above AI risk bars with the doctor's notes; visually outrank the AI percentage (AI shown but greyed/struck-through).
+- In `PatientDashboard.tsx` "Risk Insights" tab and `PatientsList.tsx`/`PatientProfile.tsx` risk overview: when a screening has a corrected_risk_level, use it for sorting/highlighting instead of the raw AI percentage.
 
 ## Technical details
 
-- Migration: `ALTER TYPE app_role ADD VALUE 'patient';` + update `user_roles` insert RLS to allow self-insert of `'patient'`.
-- New page files: `src/pages/DoctorDashboardPage.tsx`, `src/pages/VolunteerDashboardPage.tsx`, `src/pages/PatientDashboardPage.tsx`.
-- New components: `src/components/dashboard/PatientDashboard/{HealthHub.tsx, MyScreenings.tsx, MyTimeline.tsx, MyRiskInsights.tsx, MyImaging.tsx}`.
-- Patient data scoping: `health_screenings` already has `submitted_by`. For a patient, query `submitted_by = auth.uid()` OR `patient_identifier = profile.patient_identifier`. Add `patient_identifier` column to `profiles` so a patient's record can be linked to screenings entered by doctors/volunteers.
-- RLS update: patients can SELECT screenings where `patient_identifier = (their profile)`.
-- Update `App.tsx` routes, `AppLayout` nav (hide Submit/Validate for patients), `ProtectedRoute` for `requiredRole="patient"`.
-- Visual differentiation: each dashboard gets a distinct hero gradient, icon set, and tab palette so they read as clearly different products.
+- **Migration** (one file):
+  1. New RLS policy on `notifications`: patients can INSERT when `category = 'screening_request'` AND target user has `doctor` role.
+  2. New function `notify_patient_on_signoff()` (SECURITY DEFINER, `set search_path = public`).
+  3. Trigger `trg_notify_patient_on_signoff` AFTER INSERT OR UPDATE ON `screening_validations`.
+- **Code changes**:
+  - `src/components/dashboard/PatientDashboard.tsx` — PDF button + screening request dialog.
+  - `src/components/screening/ScreeningResults.tsx` — fetch + show doctor-revised banner.
+  - `src/components/AppLayout.tsx` — link user block to `/profile`.
+  - `src/pages/ProfileSettings.tsx` (new) — MRN/profile form.
+  - `src/App.tsx` — route for `/profile`.
+- **No changes** to `Dashboard.tsx` or nav role filtering (already correct).
 
-## Out of scope (this round)
-- Patient-to-doctor messaging
-- Appointment booking
-- Patient self-uploading screenings (still doctor/volunteer entered)
+## Out of scope
+
+- Doctor-side scheduling UI for screening requests (notification is the handoff).
+- Editing past MRN-linked records when patient changes their MRN.
+- Versioned audit trail of doctor revisions (single latest validation used).
