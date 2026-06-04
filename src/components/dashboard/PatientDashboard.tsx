@@ -8,9 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ScreeningResults } from "@/components/screening/ScreeningResults";
 import { PatientHealthTimeline } from "./PatientHealthTimeline";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { generatePatientPdfReport, downloadPdf } from "@/lib/pdfReport";
+import { toast } from "sonner";
 import {
   HeartPulse, FlaskConical, Activity, AlertTriangle, CheckCircle2, Clock,
-  TrendingUp, Image as ImageIcon, Bell, Sparkles, Eye, FileText,
+  TrendingUp, Image as ImageIcon, Bell, Sparkles, Eye, FileText, Download, CalendarPlus, Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -25,6 +29,10 @@ export function PatientDashboard({ displayName }: Props) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [selectedScreeningId, setSelectedScreeningId] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestReason, setRequestReason] = useState("");
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +69,81 @@ export function PatientDashboard({ displayName }: Props) {
   const selected = selectedScreeningId ? screenings.find((s) => s.id === selectedScreeningId) : null;
   const selectedRisks = selectedScreeningId ? risks.filter((r) => r.screening_id === selectedScreeningId) : [];
 
+  const handleDownloadPdf = async () => {
+    if (!user) return;
+    setGeneratingPdf(true);
+    try {
+      const screeningIds = screenings.map((s) => s.id);
+      const [bRes, vRes] = await Promise.all([
+        screeningIds.length
+          ? supabase.from("biomarker_profiles").select("*").in("screening_id", screeningIds)
+          : Promise.resolve({ data: [] as any[] }),
+        screeningIds.length
+          ? supabase.from("screening_validations").select("*").in("screening_id", screeningIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const last = screenings[0];
+      const blob = await generatePatientPdfReport({
+        patient: {
+          identifier: profile?.patient_identifier || "",
+          name: displayName || last?.patient_name || "Patient",
+          age: last?.patient_age || 0,
+          sex: last?.patient_sex || "unknown",
+        },
+        screenings: screenings as any,
+        risks: myRisks as any,
+        biomarkers: (bRes.data as any[]) || [],
+        validations: ((vRes.data as any[]) || []).map((v) => ({
+          screening_id: v.screening_id,
+          validation_status: v.validation_status,
+          corrected_risk_level: v.corrected_risk_level,
+          doctor_notes: v.doctor_notes,
+          signed_off_at: v.signed_off_at,
+        })),
+        generatedBy: displayName,
+      });
+      downloadPdf(blob, `my-health-report-${format(new Date(), "yyyyMMdd")}.pdf`);
+      toast.success("Report downloaded");
+    } catch (e: any) {
+      toast.error("Could not generate report", { description: e.message });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  const handleRequestScreening = async () => {
+    if (!user) return;
+    setRequesting(true);
+    try {
+      // Find all doctors
+      const { data: doctorRoles, error: drErr } = await supabase
+        .from("user_roles").select("user_id").eq("role", "doctor");
+      if (drErr) throw drErr;
+      if (!doctorRoles || doctorRoles.length === 0) {
+        toast.error("No clinicians available right now");
+        return;
+      }
+      const patientLabel = displayName || profile?.patient_identifier || "A patient";
+      const rows = doctorRoles.map((d) => ({
+        user_id: d.user_id,
+        title: "New screening request",
+        message: `${patientLabel} requested a screening: ${requestReason || "(no details provided)"}`,
+        type: "info",
+        severity: "low",
+        category: "screening_request",
+      }));
+      const { error } = await supabase.from("notifications").insert(rows);
+      if (error) throw error;
+      toast.success("Request sent to your care team");
+      setRequestOpen(false);
+      setRequestReason("");
+    } catch (e: any) {
+      toast.error("Could not send request", { description: e.message });
+    } finally {
+      setRequesting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Calm wellness hero */}
@@ -76,12 +159,47 @@ export function PatientDashboard({ displayName }: Props) {
               Your personal health record. Track screenings, follow biomarker trends, and stay ahead of your wellness.
             </p>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:items-end">
             {profile?.patient_identifier ? (
               <Badge className="bg-white/20 hover:bg-white/20 text-white border-none">MRN: {profile.patient_identifier}</Badge>
             ) : (
-              <Badge className="bg-white/20 hover:bg-white/20 text-white border-none">No MRN linked</Badge>
+              <Link to="/profile">
+                <Badge className="bg-white/20 hover:bg-white/30 text-white border-none cursor-pointer">Link your MRN →</Badge>
+              </Link>
             )}
+            <div className="flex gap-2">
+              <Button size="sm" variant="secondary" onClick={handleDownloadPdf} disabled={generatingPdf || screenings.length === 0}>
+                {generatingPdf ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}
+                Download report
+              </Button>
+              <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-white text-[hsl(180_45%_25%)] hover:bg-white/90">
+                    <CalendarPlus className="h-4 w-4 mr-1.5" />
+                    Request screening
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Request a screening</DialogTitle>
+                    <DialogDescription>Your care team will be notified and will reach out to arrange it.</DialogDescription>
+                  </DialogHeader>
+                  <Textarea
+                    rows={4}
+                    placeholder="Reason, symptoms, preferred date, or anything you'd like the clinician to know..."
+                    value={requestReason}
+                    onChange={(e) => setRequestReason(e.target.value)}
+                  />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setRequestOpen(false)} disabled={requesting}>Cancel</Button>
+                    <Button onClick={handleRequestScreening} disabled={requesting}>
+                      {requesting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CalendarPlus className="h-4 w-4 mr-1.5" />}
+                      Send request
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </div>
