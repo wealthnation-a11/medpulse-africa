@@ -119,15 +119,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <User className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-medium text-foreground leading-tight">
-                  {displayName || user?.email?.split("@")[0] || "User"}
-                </span>
-                <span className="text-xs text-muted-foreground">{roleLabel}</span>
-              </div>
+              <Link to="/profile" className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors" title="Profile settings">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground leading-tight">
+                    {displayName || user?.email?.split("@")[0] || "User"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{roleLabel}</span>
+                </div>
+              </Link>
             </div>
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
               <LogOut className="h-4 w-4" />
