@@ -18,6 +18,7 @@ import SubmitScreening from "./pages/SubmitScreening";
 import DoctorValidations from "./pages/DoctorValidations";
 import MySubmissionsPage from "./pages/MySubmissions";
 import PatientProfile from "./pages/PatientProfile";
+import ProfileSettings from "./pages/ProfileSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -117,6 +118,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={["doctor", "admin"]}>
                   <PatientProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfileSettings />
                 </ProtectedRoute>
               }
             />
