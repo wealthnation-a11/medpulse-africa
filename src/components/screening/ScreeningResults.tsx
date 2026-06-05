@@ -209,16 +209,49 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
                         <Shield className="h-4 w-4 text-[hsl(var(--risk-low))]" />
                       )}
                       <span className="font-semibold text-sm capitalize">{ra.disease_name}</span>
+                      {ra.disagreement && (
+                        <Badge variant="outline" className="border-[hsl(var(--risk-medium))] text-[hsl(var(--risk-medium))] gap-1">
+                          <GitCompare className="h-3 w-3" />
+                          Models disagree
+                        </Badge>
+                      )}
                     </div>
                     <span className={`text-lg font-bold ${getRiskColor(ra.risk_percentage)}`}>
                       {ra.risk_percentage}%
                     </span>
                   </div>
                   <Progress value={ra.risk_percentage} className={`h-2 ${getRiskBg(ra.risk_percentage)}`} />
-                  <div className="flex gap-3 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                     <span>Confidence: {Math.round(ra.confidence * 100)}%</span>
                     {ra.time_horizon && <span>• Time horizon: {ra.time_horizon}</span>}
+                    {ra.rule_based_level && <span>• Rule-based: {ra.rule_based_level}</span>}
                   </div>
+                  {(ra.rationale || (ra.evidence && ra.evidence.length > 0)) && (
+                    <Collapsible>
+                      <CollapsibleTrigger className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                        <ChevronDown className="h-3 w-3" />
+                        Why this risk?
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-2 space-y-2">
+                        {ra.rationale && (
+                          <p className="text-xs text-muted-foreground leading-relaxed">{ra.rationale}</p>
+                        )}
+                        {ra.evidence && ra.evidence.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold mb-1">Evidence:</p>
+                            <ul className="space-y-1">
+                              {ra.evidence.map((ev, i) => (
+                                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                                  <span className="text-primary mt-0.5">•</span>
+                                  {ev}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
                   {ra.recommended_actions?.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold mb-1">Recommended Actions:</p>
