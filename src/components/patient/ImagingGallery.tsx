@@ -3,12 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, ImageOff } from "lucide-react";
 import { format } from "date-fns";
+import { ImagingOverlay } from "@/components/screening/ImagingOverlay";
 
 interface ImagingScreening {
   id: string;
   created_at: string;
   imaging_findings?: string;
   test_results: Record<string, any>;
+  imaging_regions?: any[];
 }
 
 interface Props {
@@ -69,11 +71,14 @@ export function ImagingGallery({ screenings }: Props) {
                 <p className="text-xs text-muted-foreground italic">{s.imaging_findings}</p>
               )}
               {urls.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
                   {urls.map((u, i) => (
-                    <a key={i} href={u} target="_blank" rel="noreferrer" className="block rounded overflow-hidden border border-border">
-                      <img src={u} alt="Medical scan" className="w-full h-24 object-cover" />
-                    </a>
+                    <ImagingOverlay
+                      key={i}
+                      src={u}
+                      regions={i === 0 ? (s.imaging_regions || []) : []}
+                      alt="Medical scan"
+                    />
                   ))}
                 </div>
               ) : (
