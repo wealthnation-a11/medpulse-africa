@@ -5,9 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Clock, Brain, Activity, Shield, Eye } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Brain, Activity, Shield, Eye, GitCompare, ChevronDown } from "lucide-react";
 import { ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
+import { ImagingOverlay, type ImagingRegion } from "@/components/screening/ImagingOverlay";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface RiskAssessment {
   id: string;
@@ -16,6 +18,10 @@ interface RiskAssessment {
   confidence: number;
   time_horizon: string;
   recommended_actions: string[];
+  rationale?: string;
+  evidence?: string[];
+  rule_based_level?: string | null;
+  disagreement?: boolean;
 }
 
 interface Screening {
@@ -30,6 +36,7 @@ interface Screening {
   family_history: string[];
   clinical_notes: string;
   imaging_findings?: string;
+  imaging_regions?: ImagingRegion[];
   patient_identifier?: string;
   patient_name?: string;
 }
@@ -161,11 +168,15 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
               <p className="text-xs text-muted-foreground">AI is reviewing the uploaded image(s)…</p>
             )}
             {imageUrls.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {imageUrls.map((u, i) => (
-                  <a key={i} href={u} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-border">
-                    <img src={u} alt={`Medical image ${i + 1}`} className="w-full h-32 object-cover" />
-                  </a>
+                  <div key={i} className="pt-5">
+                    <ImagingOverlay
+                      src={u}
+                      regions={i === 0 ? (screening.imaging_regions || []) : []}
+                      alt={`Medical image ${i + 1}`}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -198,16 +209,49 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
                         <Shield className="h-4 w-4 text-[hsl(var(--risk-low))]" />
                       )}
                       <span className="font-semibold text-sm capitalize">{ra.disease_name}</span>
+                      {ra.disagreement && (
+                        <Badge variant="outline" className="border-[hsl(var(--risk-medium))] text-[hsl(var(--risk-medium))] gap-1">
+                          <GitCompare className="h-3 w-3" />
+                          Models disagree
+                        </Badge>
+                      )}
                     </div>
                     <span className={`text-lg font-bold ${getRiskColor(ra.risk_percentage)}`}>
                       {ra.risk_percentage}%
                     </span>
                   </div>
                   <Progress value={ra.risk_percentage} className={`h-2 ${getRiskBg(ra.risk_percentage)}`} />
-                  <div className="flex gap-3 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                     <span>Confidence: {Math.round(ra.confidence * 100)}%</span>
                     {ra.time_horizon && <span>• Time horizon: {ra.time_horizon}</span>}
+                    {ra.rule_based_level && <span>• Rule-based: {ra.rule_based_level}</span>}
                   </div>
+                  {(ra.rationale || (ra.evidence && ra.evidence.length > 0)) && (
+                    <Collapsible>
+                      <CollapsibleTrigger className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                        <ChevronDown className="h-3 w-3" />
+                        Why this risk?
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-2 space-y-2">
+                        {ra.rationale && (
+                          <p className="text-xs text-muted-foreground leading-relaxed">{ra.rationale}</p>
+                        )}
+                        {ra.evidence && ra.evidence.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold mb-1">Evidence:</p>
+                            <ul className="space-y-1">
+                              {ra.evidence.map((ev, i) => (
+                                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                                  <span className="text-primary mt-0.5">•</span>
+                                  {ev}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
                   {ra.recommended_actions?.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold mb-1">Recommended Actions:</p>
