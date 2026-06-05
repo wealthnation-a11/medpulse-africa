@@ -168,11 +168,15 @@ export function ScreeningResults({ screening, riskAssessments }: ScreeningResult
               <p className="text-xs text-muted-foreground">AI is reviewing the uploaded image(s)…</p>
             )}
             {imageUrls.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {imageUrls.map((u, i) => (
-                  <a key={i} href={u} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-border">
-                    <img src={u} alt={`Medical image ${i + 1}`} className="w-full h-32 object-cover" />
-                  </a>
+                  <div key={i} className="pt-5">
+                    <ImagingOverlay
+                      src={u}
+                      regions={i === 0 ? (screening.imaging_regions || []) : []}
+                      alt={`Medical image ${i + 1}`}
+                    />
+                  </div>
                 ))}
               </div>
             )}
