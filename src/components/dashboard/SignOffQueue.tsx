@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { ShieldCheck, AlertTriangle, ArrowRight, Loader2, GitCompare } from "lucide-react";
 import { format } from "date-fns";
 
 interface QueueItem {
@@ -15,6 +15,7 @@ interface QueueItem {
   created_at: string;
   topRisk: number;
   topDisease: string;
+  disagreement: boolean;
 }
 
 export function SignOffQueue() {
@@ -36,7 +37,8 @@ export function SignOffQueue() {
       const sRisks = risks.filter((r: any) => r.screening_id === s.id);
       if (sRisks.length === 0) continue;
       const top = sRisks.sort((a: any, b: any) => b.risk_percentage - a.risk_percentage)[0];
-      if (top.risk_percentage < 30) continue;
+      const hasDisagreement = sRisks.some((r: any) => r.disagreement === true);
+      if (top.risk_percentage < 30 && !hasDisagreement) continue;
       list.push({
         screening_id: s.id,
         patient_identifier: s.patient_identifier || "(unassigned)",
@@ -45,8 +47,14 @@ export function SignOffQueue() {
         created_at: s.created_at,
         topRisk: top.risk_percentage,
         topDisease: top.disease_name,
+        disagreement: hasDisagreement,
       });
     }
+    // Sort: disagreement first, then high → low risk
+    list.sort((a, b) => {
+      if (a.disagreement !== b.disagreement) return a.disagreement ? -1 : 1;
+      return b.topRisk - a.topRisk;
+    });
     setItems(list);
     setLoading(false);
   };
@@ -65,7 +73,6 @@ export function SignOffQueue() {
   }
 
   const high = items.filter((i) => i.topRisk >= 60);
-  const medium = items.filter((i) => i.topRisk >= 30 && i.topRisk < 60);
 
   return (
     <Card>
@@ -81,7 +88,7 @@ export function SignOffQueue() {
           <p className="text-sm text-muted-foreground text-center py-8">All AI-flagged screenings have been signed off. ✓</p>
         ) : (
           <div className="space-y-2">
-            {[...high, ...medium].slice(0, 20).map((item) => (
+            {items.slice(0, 20).map((item) => (
               <Link
                 key={item.screening_id}
                 to={`/patient/${encodeURIComponent(item.patient_identifier)}`}
@@ -97,6 +104,12 @@ export function SignOffQueue() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {item.disagreement && (
+                    <Badge variant="outline" className="border-[hsl(var(--risk-medium))] text-[hsl(var(--risk-medium))] gap-1">
+                      <GitCompare className="h-3 w-3" />
+                      Disagree
+                    </Badge>
+                  )}
                   <Badge className={item.topRisk >= 60 ? "bg-[hsl(var(--risk-high)/0.15)] text-[hsl(var(--risk-high))]" : "bg-[hsl(var(--risk-medium)/0.15)] text-[hsl(var(--risk-medium))]"}>
                     {Math.round(item.topRisk)}%
                   </Badge>
