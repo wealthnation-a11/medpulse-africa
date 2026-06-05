@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_feedback_examples: {
+        Row: {
+          ai_risk_percentage: number
+          corrected_risk_level: string
+          created_at: string
+          disease_name: string
+          doctor_notes: string | null
+          id: string
+          patient_age: number | null
+          patient_sex: string | null
+          screening_id: string
+        }
+        Insert: {
+          ai_risk_percentage: number
+          corrected_risk_level: string
+          created_at?: string
+          disease_name: string
+          doctor_notes?: string | null
+          id?: string
+          patient_age?: number | null
+          patient_sex?: string | null
+          screening_id: string
+        }
+        Update: {
+          ai_risk_percentage?: number
+          corrected_risk_level?: string
+          created_at?: string
+          disease_name?: string
+          doctor_notes?: string | null
+          id?: string
+          patient_age?: number | null
+          patient_sex?: string | null
+          screening_id?: string
+        }
+        Relationships: []
+      }
       biomarker_profiles: {
         Row: {
           biomarker_name: string
@@ -62,30 +98,42 @@ export type Database = {
         Row: {
           confidence: number
           created_at: string
+          disagreement: boolean
           disease_name: string
+          evidence: Json | null
           id: string
+          rationale: string | null
           recommended_actions: Json | null
           risk_percentage: number
+          rule_based_level: string | null
           screening_id: string
           time_horizon: string | null
         }
         Insert: {
           confidence?: number
           created_at?: string
+          disagreement?: boolean
           disease_name: string
+          evidence?: Json | null
           id?: string
+          rationale?: string | null
           recommended_actions?: Json | null
           risk_percentage?: number
+          rule_based_level?: string | null
           screening_id: string
           time_horizon?: string | null
         }
         Update: {
           confidence?: number
           created_at?: string
+          disagreement?: boolean
           disease_name?: string
+          evidence?: Json | null
           id?: string
+          rationale?: string | null
           recommended_actions?: Json | null
           risk_percentage?: number
+          rule_based_level?: string | null
           screening_id?: string
           time_horizon?: string | null
         }
@@ -148,6 +196,7 @@ export type Database = {
           family_history: Json | null
           id: string
           imaging_findings: string
+          imaging_regions: Json | null
           patient_age: number
           patient_identifier: string
           patient_name: string
@@ -165,6 +214,7 @@ export type Database = {
           family_history?: Json | null
           id?: string
           imaging_findings?: string
+          imaging_regions?: Json | null
           patient_age: number
           patient_identifier?: string
           patient_name?: string
@@ -182,6 +232,7 @@ export type Database = {
           family_history?: Json | null
           id?: string
           imaging_findings?: string
+          imaging_regions?: Json | null
           patient_age?: number
           patient_identifier?: string
           patient_name?: string
