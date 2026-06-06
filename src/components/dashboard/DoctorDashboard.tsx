@@ -12,6 +12,7 @@ import { ScreeningIntelligence } from "./ScreeningIntelligence";
 import { PatientHealthTimeline } from "./PatientHealthTimeline";
 import { SignOffQueue } from "./SignOffQueue";
 import { PatientsList } from "./PatientsList";
+import { FollowUpsCard } from "./FollowUpsCard";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -168,7 +169,8 @@ export function DoctorDashboard({
           <SignOffQueue />
         </TabsContent>
 
-        <TabsContent value="patients">
+        <TabsContent value="patients" className="space-y-6">
+          <FollowUpsCard />
           <PatientsList />
         </TabsContent>
 

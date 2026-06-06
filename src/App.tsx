@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminSettings from "./pages/AdminSettings";
 import SubmitObservation from "./pages/SubmitObservation";
 import SubmitScreening from "./pages/SubmitScreening";
+import SelfReportedScreening from "./pages/SelfReportedScreening";
 import DoctorValidations from "./pages/DoctorValidations";
 import MySubmissionsPage from "./pages/MySubmissions";
 import PatientProfile from "./pages/PatientProfile";
@@ -94,6 +95,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={["volunteer", "doctor"]}>
                   <SubmitScreening />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/self-report"
+              element={
+                <ProtectedRoute requiredRole={["volunteer", "doctor", "patient"]}>
+                  <SelfReportedScreening />
                 </ProtectedRoute>
               }
             />

@@ -188,6 +188,72 @@ export type Database = {
           },
         ]
       }
+      fhir_ingest_logs: {
+        Row: {
+          bundle_id: string | null
+          created_count: number
+          error: Json | null
+          id: string
+          payload_size: number
+          received_at: string
+          resource_count: number
+          skipped: Json
+          source_system: string
+        }
+        Insert: {
+          bundle_id?: string | null
+          created_count?: number
+          error?: Json | null
+          id?: string
+          payload_size?: number
+          received_at?: string
+          resource_count?: number
+          skipped?: Json
+          source_system?: string
+        }
+        Update: {
+          bundle_id?: string | null
+          created_count?: number
+          error?: Json | null
+          id?: string
+          payload_size?: number
+          received_at?: string
+          resource_count?: number
+          skipped?: Json
+          source_system?: string
+        }
+        Relationships: []
+      }
+      fhir_ingest_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          label: string
+          last_used_at: string | null
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          label: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: []
+      }
       health_screenings: {
         Row: {
           ai_analysis_complete: boolean
@@ -198,10 +264,13 @@ export type Database = {
           imaging_findings: string
           imaging_regions: Json | null
           patient_age: number
+          patient_dob: string | null
           patient_identifier: string
           patient_name: string
+          patient_name_normalized: string | null
           patient_sex: string
           screening_type: string
+          source: string
           status: string
           submitted_by: string
           test_results: Json
@@ -216,10 +285,13 @@ export type Database = {
           imaging_findings?: string
           imaging_regions?: Json | null
           patient_age: number
+          patient_dob?: string | null
           patient_identifier?: string
           patient_name?: string
+          patient_name_normalized?: string | null
           patient_sex?: string
           screening_type?: string
+          source?: string
           status?: string
           submitted_by: string
           test_results?: Json
@@ -234,10 +306,13 @@ export type Database = {
           imaging_findings?: string
           imaging_regions?: Json | null
           patient_age?: number
+          patient_dob?: string | null
           patient_identifier?: string
           patient_name?: string
+          patient_name_normalized?: string | null
           patient_sex?: string
           screening_type?: string
+          source?: string
           status?: string
           submitted_by?: string
           test_results?: Json
@@ -347,6 +422,42 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_directory: {
+        Row: {
+          aliases: Json
+          canonical_identifier: string
+          created_at: string
+          display_name: string
+          display_name_normalized: string
+          dob: string | null
+          id: string
+          sex: string | null
+          updated_at: string
+        }
+        Insert: {
+          aliases?: Json
+          canonical_identifier: string
+          created_at?: string
+          display_name: string
+          display_name_normalized: string
+          dob?: string | null
+          id?: string
+          sex?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aliases?: Json
+          canonical_identifier?: string
+          created_at?: string
+          display_name?: string
+          display_name_normalized?: string
+          dob?: string | null
+          id?: string
+          sex?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           auto_flag_high_risk: boolean
@@ -416,6 +527,51 @@ export type Database = {
         }
         Relationships: []
       }
+      screening_follow_ups: {
+        Row: {
+          assigned_doctor_id: string | null
+          biomarker_name: string
+          created_at: string
+          due_at: string
+          id: string
+          patient_identifier: string
+          projected_value: number | null
+          reason: string
+          screening_id: string | null
+          status: string
+          threshold_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_doctor_id?: string | null
+          biomarker_name: string
+          created_at?: string
+          due_at: string
+          id?: string
+          patient_identifier: string
+          projected_value?: number | null
+          reason?: string
+          screening_id?: string | null
+          status?: string
+          threshold_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_doctor_id?: string | null
+          biomarker_name?: string
+          created_at?: string
+          due_at?: string
+          id?: string
+          patient_identifier?: string
+          projected_value?: number | null
+          reason?: string
+          screening_id?: string | null
+          status?: string
+          threshold_value?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       screening_validations: {
         Row: {
           corrected_risk_level: string | null
@@ -479,6 +635,7 @@ export type Database = {
     }
     Functions: {
       current_patient_identifier: { Args: never; Returns: string }
+      generate_patient_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -490,6 +647,23 @@ export type Database = {
       is_doctor: { Args: never; Returns: boolean }
       is_patient: { Args: never; Returns: boolean }
       is_volunteer: { Args: never; Returns: boolean }
+      match_or_create_patient: {
+        Args: { in_dob: string; in_name: string; in_sex: string }
+        Returns: string
+      }
+      normalize_patient_name: { Args: { in_name: string }; Returns: string }
+      preview_patient_match: {
+        Args: { in_dob: string; in_name: string }
+        Returns: {
+          canonical_identifier: string
+          display_name: string
+          dob: string
+          prior_screenings: number
+          similarity_score: number
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "volunteer" | "doctor" | "admin" | "patient"
