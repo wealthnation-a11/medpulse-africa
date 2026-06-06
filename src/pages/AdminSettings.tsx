@@ -13,6 +13,7 @@ import {
   Settings, Shield, Bell, AlertTriangle, Save, Loader2, RotateCcw,
   Gauge, Users, Activity, Zap,
 } from "lucide-react";
+import { FhirIngestionPanel } from "@/components/admin/FhirIngestionPanel";
 
 interface PlatformSettings {
   id: string;
@@ -288,6 +289,8 @@ export default function AdminSettings() {
             </div>
           </CardContent>
         </Card>
+
+        <FhirIngestionPanel />
       </div>
     </AppLayout>
   );
