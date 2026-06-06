@@ -96,6 +96,7 @@ serve(async (req) => {
     }
 
     const isImaging = screening.screening_type === "imaging";
+    const isSelfReported = screening.source === "self_reported";
     const imagePaths: string[] = Array.isArray(screening.test_results?.image_paths) ? screening.test_results.image_paths : [];
 
     const signedImageUrls: string[] = [];
@@ -183,6 +184,7 @@ Patient Information:
 - Sex: ${screening.patient_sex}
 - Family History: ${JSON.stringify(screening.family_history)}
 - Screening Type: ${screening.screening_type}
+- Data Source: ${screening.source || "clinical"}${isSelfReported ? " (treat as advisory; do not flip risk class on a single self-reported outlier)" : ""}
 - Test Results: ${JSON.stringify(screening.test_results)}
 - Clinical Notes: ${screening.clinical_notes || "None"}
 
@@ -274,7 +276,7 @@ Base analysis on established medical reference ranges. Be thorough but evidence-
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: isImaging ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
+        model: isImaging && !isSelfReported ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "You are a medical AI specialist focused on early disease detection through blood tests, genetic screening, biomarker analysis, and longitudinal trend reasoning." },
           { role: "user", content: userContent },
