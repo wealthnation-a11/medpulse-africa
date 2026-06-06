@@ -21,6 +21,10 @@ const refRanges: Record<string, { low?: number; high?: number; unit: string }> =
   tsh: { low: 0.4, high: 4, unit: "mIU/L" },
   ferritin: { low: 12, high: 300, unit: "ng/mL" },
   vitamin_d: { low: 30, high: 100, unit: "ng/mL" },
+  systolic_bp: { low: 90, high: 130, unit: "mmHg" },
+  diastolic_bp: { low: 60, high: 85, unit: "mmHg" },
+  spo2: { low: 94, unit: "%" },
+  pulse: { low: 50, high: 100, unit: "bpm" },
 };
 
 type Level = "Low" | "Medium" | "High";
