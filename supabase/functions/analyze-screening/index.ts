@@ -353,6 +353,72 @@ Base analysis on established medical reference ranges. Be thorough but evidence-
       await supabase.from("biomarker_profiles").insert(biomarkers);
     }
 
+    // ---------- Auto follow-up scheduling ----------
+    try {
+      if (patientId) {
+        // find last sign-off doctor for this patient
+        const priorIds = priorScreenings.map((p) => p.id).concat([screening_id]);
+        const { data: lastVal } = await supabase
+          .from("screening_validations")
+          .select("doctor_id, signed_off_at")
+          .in("screening_id", priorIds)
+          .not("signed_off_at", "is", null)
+          .order("signed_off_at", { ascending: false })
+          .limit(1);
+        const assignedDoctorId = lastVal?.[0]?.doctor_id ?? null;
+
+        // recent follow-ups to dedupe (60 days)
+        const since = new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString();
+        const { data: recentFu } = await supabase
+          .from("screening_follow_ups")
+          .select("biomarker_name")
+          .eq("patient_identifier", patientId)
+          .gte("created_at", since);
+        const recentBm = new Set((recentFu || []).map((r: any) => r.biomarker_name));
+
+        const followUps: any[] = [];
+        for (const [name, points] of Object.entries(trendsBySeries)) {
+          if (recentBm.has(name)) continue;
+          if (points.length < 2) continue;
+          const ref = refRanges[name];
+          if (!ref) continue;
+          const slope = biomarkerSlope(points);
+          if (slope === null || slope === 0) continue;
+          const current = points[points.length - 1].value;
+          let threshold: number | null = null;
+          let monthsToCross: number | null = null;
+          if (ref.high !== undefined && current <= ref.high && slope > 0) {
+            threshold = ref.high;
+            monthsToCross = ((ref.high - current) / slope) * 12;
+          } else if (ref.low !== undefined && current >= ref.low && slope < 0) {
+            threshold = ref.low;
+            monthsToCross = ((ref.low - current) / slope) * 12;
+          }
+          if (threshold === null || monthsToCross === null) continue;
+          if (monthsToCross <= 0 || monthsToCross > 18) continue;
+          const scheduleMonths = monthsToCross <= 3 ? 1 : Math.max(1, Math.floor(monthsToCross * 0.5));
+          const dueAt = new Date(Date.now() + scheduleMonths * 30 * 24 * 3600 * 1000);
+          const projected = current + slope * (scheduleMonths / 12);
+          followUps.push({
+            patient_identifier: patientId,
+            screening_id,
+            biomarker_name: name,
+            projected_value: projected,
+            threshold_value: threshold,
+            due_at: dueAt.toISOString(),
+            reason: `${name} trending ${slope > 0 ? "up" : "down"} toward ${threshold}; projected ~${projected.toFixed(2)} in ${scheduleMonths} mo`,
+            status: "pending",
+            assigned_doctor_id: assignedDoctorId,
+          });
+        }
+        if (followUps.length > 0) {
+          await supabase.from("screening_follow_ups").insert(followUps);
+        }
+      }
+    } catch (e) {
+      console.error("follow-up scheduling failed:", e);
+    }
+
     await supabase.from("health_screenings").update({
       ai_analysis_complete: true,
       status: "analyzed",
