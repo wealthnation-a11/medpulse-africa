@@ -82,6 +82,7 @@ export function ScreeningForm() {
   const [familyHistory, setFamilyHistory] = useState<string[]>([]);
   const [patientIdentifier, setPatientIdentifier] = useState("");
   const [patientName, setPatientName] = useState("");
+  const [patientDob, setPatientDob] = useState("");
 
   // Step 2: Screening Type
   const [screeningType, setScreeningType] = useState("blood_test");
@@ -173,6 +174,7 @@ export function ScreeningForm() {
         status: "pending",
         patient_identifier: patientIdentifier.trim(),
         patient_name: patientName.trim(),
+        patient_dob: patientDob || null,
       }).select().single();
 
       if (error) throw error;
@@ -245,6 +247,10 @@ export function ScreeningForm() {
                   onChange={(e) => setPatientName(e.target.value)}
                   placeholder="e.g. Jane Doe"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Date of Birth (improves matching)</Label>
+                <Input type="date" value={patientDob} onChange={(e) => setPatientDob(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Age</Label>
