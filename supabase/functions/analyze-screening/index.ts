@@ -76,6 +76,19 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // --- Authentication & authorization ---
+    // Allow either: (a) a service-role token (used for internal invocations
+    // such as fhir-ingest -> analyze-screening), or (b) an authenticated user
+    // with the doctor/admin role, or the volunteer who submitted the screening.
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { screening_id } = await req.json();
     if (!screening_id) {
       return new Response(JSON.stringify({ error: "screening_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -84,6 +97,30 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
+
+    const isServiceRoleCall = token === serviceKey;
+    if (!isServiceRoleCall) {
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userId = userData.user.id;
+      const [{ data: roles }, { data: ownsRow }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("health_screenings").select("submitted_by").eq("id", screening_id).maybeSingle(),
+      ]);
+      const isPrivileged = (roles || []).some((r: any) => r.role === "doctor" || r.role === "admin");
+      const isOwner = ownsRow?.submitted_by === userId;
+      if (!isPrivileged && !isOwner) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     const { data: screening, error: sErr } = await supabase.from("health_screenings").select("*").eq("id", screening_id).single();
     if (sErr || !screening) {
