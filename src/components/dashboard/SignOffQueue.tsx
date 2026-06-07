@@ -24,7 +24,7 @@ export function SignOffQueue() {
 
   const load = async () => {
     const [sRes, rRes, vRes] = await Promise.all([
-      supabase.from("health_screenings").select("id, patient_identifier, patient_name, screening_type, created_at").order("created_at", { ascending: false }),
+      supabase.from("health_screenings").select("id, patient_identifier, patient_name, screening_type, source, created_at").order("created_at", { ascending: false }),
       supabase.from("disease_risk_assessments").select("*"),
       supabase.from("screening_validations").select("screening_id, signed_off_at"),
     ]);
