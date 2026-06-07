@@ -39,6 +39,8 @@ export function SignOffQueue() {
       const top = sRisks.sort((a: any, b: any) => b.risk_percentage - a.risk_percentage)[0];
       const hasDisagreement = sRisks.some((r: any) => r.disagreement === true);
       if (top.risk_percentage < 30 && !hasDisagreement) continue;
+      // Skip self-reported screenings unless they triggered a disagreement or high-risk alert
+      if ((s as any).source === "self_reported" && !hasDisagreement && top.risk_percentage < 60) continue;
       list.push({
         screening_id: s.id,
         patient_identifier: s.patient_identifier || "(unassigned)",
