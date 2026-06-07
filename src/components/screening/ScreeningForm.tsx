@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -83,6 +83,17 @@ export function ScreeningForm() {
   const [patientIdentifier, setPatientIdentifier] = useState("");
   const [patientName, setPatientName] = useState("");
   const [patientDob, setPatientDob] = useState("");
+  const [matches, setMatches] = useState<Array<{ canonical_identifier: string; display_name: string; prior_screenings: number; similarity_score: number }>>([]);
+
+  useEffect(() => {
+    const name = patientName.trim();
+    if (name.length < 3) { setMatches([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase.rpc("preview_patient_match", { in_name: name, in_dob: patientDob || null });
+      setMatches((data || []) as any);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [patientName, patientDob]);
 
   // Step 2: Screening Type
   const [screeningType, setScreeningType] = useState("blood_test");
@@ -268,6 +279,22 @@ export function ScreeningForm() {
                 </Select>
               </div>
             </div>
+            {matches.length > 0 && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-1">
+                <p className="text-xs font-semibold text-primary">Possible matches found</p>
+                {matches.slice(0, 3).map((m) => (
+                  <button
+                    type="button"
+                    key={m.canonical_identifier}
+                    onClick={() => { setPatientIdentifier(m.canonical_identifier); setPatientName(m.display_name); }}
+                    className="w-full flex items-center justify-between text-left text-xs rounded px-2 py-1 hover:bg-primary/10"
+                  >
+                    <span><span className="font-mono">{m.canonical_identifier}</span> — {m.display_name}</span>
+                    <span className="text-muted-foreground">{m.prior_screenings} prior · {Math.round(m.similarity_score * 100)}% match</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Family History</Label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

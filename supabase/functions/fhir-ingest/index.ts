@@ -54,6 +54,18 @@ serve(async (req) => {
   }
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const rawText = await req.text();
+  const logError = async (err: unknown, status = 500) => {
+    await supabase.from("fhir_ingest_logs").insert({
+      source_system: req.headers.get("X-Source-System") || "",
+      bundle_id: null,
+      resource_count: 0,
+      created_count: 0,
+      skipped: [],
+      payload_size: rawText.length,
+      error: { message: err instanceof Error ? err.message : String(err), status },
+    });
+  };
 
   // Auth: either valid Supabase JWT (doctor/admin) or X-FHIR-Ingest-Token
   let submittedBy: string | null = null;
@@ -77,12 +89,13 @@ serve(async (req) => {
     }
   }
   if (!submittedBy) {
+    await logError("Unauthorized", 401);
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   let body: any;
-  const rawText = await req.text();
   try { body = JSON.parse(rawText); } catch {
+    await logError("Invalid JSON", 400);
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
