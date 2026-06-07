@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ScreeningResults } from "@/components/screening/ScreeningResults";
 import { PatientHealthTimeline } from "./PatientHealthTimeline";
+import { FollowUpsCard } from "./FollowUpsCard";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { generatePatientPdfReport, downloadPdf } from "@/lib/pdfReport";
@@ -268,7 +269,10 @@ export function PatientDashboard({ displayName }: Props) {
         </TabsContent>
 
         <TabsContent value="timeline">
-          <PatientHealthTimeline />
+          <div className="space-y-4">
+            <FollowUpsCard />
+            <PatientHealthTimeline />
+          </div>
         </TabsContent>
 
         <TabsContent value="risks">
