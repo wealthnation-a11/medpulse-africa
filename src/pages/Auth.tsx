@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, ArrowLeft, Loader2, Stethoscope, HeartHandshake, User } from "lucide-react";
+import { Activity, ArrowLeft, Loader2, Stethoscope, HeartHandshake, User, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Mode = "login" | "signup";
@@ -31,6 +31,15 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup" && role === "doctor") {
+      toast({
+        title: "Doctor accounts require approval",
+        description:
+          "For patient safety, clinician accounts must be provisioned by an administrator. Please contact your MedPulse admin.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -133,6 +142,15 @@ export default function Auth() {
                 </div>
               </div>
 
+              {mode === "signup" && role === "doctor" && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                  <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    Doctor accounts must be provisioned by an administrator. Sign in if your admin has already created your account, or contact your MedPulse admin to request access.
+                  </span>
+                </div>
+              )}
+
               {mode === "signup" && (
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
@@ -186,7 +204,7 @@ export default function Auth() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <Button type="submit" className="w-full" disabled={submitting || (mode === "signup" && role === "doctor")}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {mode === "signup" ? "Create Account" : `Sign In as ${role === "doctor" ? "Doctor" : "Volunteer"}`}
               </Button>
