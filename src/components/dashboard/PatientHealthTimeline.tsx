@@ -41,7 +41,7 @@ const BIOMARKER_LABELS: Record<string, string> = {
 
 export function PatientHealthTimeline() {
   const [biomarkers, setBiomarkers] = useState<BiomarkerRecord[]>([]);
-  const [screenings, setScreenings] = useState<Array<{ id: string; patient_identifier: string; patient_name: string }>>([]);
+  const [screenings, setScreenings] = useState<Array<{ id: string; patient_identifier: string; patient_name: string; source?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBiomarker, setSelectedBiomarker] = useState<string>("all");
   const [selectedPatient, setSelectedPatient] = useState<string>("all");
@@ -50,7 +50,7 @@ export function PatientHealthTimeline() {
     const fetch = async () => {
       const [bio, scr] = await Promise.all([
         supabase.from("biomarker_profiles").select("*").order("created_at", { ascending: true }),
-        supabase.from("health_screenings").select("id, patient_identifier, patient_name"),
+        supabase.from("health_screenings").select("id, patient_identifier, patient_name, source"),
       ]);
       if (bio.data) setBiomarkers(bio.data as any);
       if (scr.data) setScreenings(scr.data as any);
@@ -81,10 +81,12 @@ export function PatientHealthTimeline() {
   // Map screening_id -> patient identifier
   const screeningToPatient: Record<string, string> = {};
   const patientLabels: Record<string, string> = {};
+  const screeningSource: Record<string, string> = {};
   screenings.forEach((s) => {
     const pid = s.patient_identifier || "(unassigned)";
     screeningToPatient[s.id] = pid;
     patientLabels[pid] = s.patient_name ? `${pid} — ${s.patient_name}` : pid;
+    if (s.source) screeningSource[s.id] = s.source;
   });
   const patientOptions = Object.keys(patientLabels).sort();
 
@@ -195,6 +197,12 @@ export function PatientHealthTimeline() {
                     {label} ({unit})
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const src = screeningSource[records[records.length - 1].screening_id];
+                      if (src === "self_reported") return <Badge variant="outline" className="text-[10px]">Home</Badge>;
+                      if (src === "fhir") return <Badge variant="outline" className="text-[10px]">Lab (FHIR)</Badge>;
+                      return null;
+                    })()}
                     {latestAbnormal && (
                       <Badge className="bg-[hsl(var(--risk-high)/0.15)] text-[hsl(var(--risk-high))] text-xs">
                         Abnormal
