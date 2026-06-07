@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -83,6 +83,17 @@ export function ScreeningForm() {
   const [patientIdentifier, setPatientIdentifier] = useState("");
   const [patientName, setPatientName] = useState("");
   const [patientDob, setPatientDob] = useState("");
+  const [matches, setMatches] = useState<Array<{ canonical_identifier: string; display_name: string; prior_screenings: number; similarity_score: number }>>([]);
+
+  useEffect(() => {
+    const name = patientName.trim();
+    if (name.length < 3) { setMatches([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase.rpc("preview_patient_match", { in_name: name, in_dob: patientDob || null });
+      setMatches((data || []) as any);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [patientName, patientDob]);
 
   // Step 2: Screening Type
   const [screeningType, setScreeningType] = useState("blood_test");
